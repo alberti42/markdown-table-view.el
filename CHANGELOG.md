@@ -12,6 +12,12 @@ to `X.Y.Z`.
 
 ## [Unreleased]
 
+### Removed
+
+- The customization groups `pretty-tables-for-markdown` and
+  `pretty-tables-for-org`, which had no members. The options and faces are
+  in the group `pretty-tables`.
+
 ## [0.2.0] - 2026-10-01
 
 ### Added

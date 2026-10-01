@@ -62,11 +62,6 @@
 (require 'org-table)
 (require 'pretty-tables)
 
-(defgroup pretty-tables-for-org nil
-  "Aligned, wrapped display of Org tables."
-  :group 'pretty-tables
-  :prefix "pretty-tables-for-org-")
-
 ;;; Reading the buffer
 
 (defun pretty-tables-for-org--row-cells (beg end)

@@ -58,11 +58,6 @@
 (require 'treesit)
 (require 'pretty-tables)
 
-(defgroup pretty-tables-for-markdown nil
-  "Aligned, wrapped display of Markdown tables."
-  :group 'pretty-tables
-  :prefix "pretty-tables-for-markdown-")
-
 (defvar-local pretty-tables-for-markdown--range-settings nil
   "The entries this mode added to `treesit-range-settings', or nil.")
 
