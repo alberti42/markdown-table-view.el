@@ -419,22 +419,38 @@ The header and the separator row get neither."
                    '(nil nil row stripe nil row)))))
 
 (ert-deftest pretty-tables-test-header-face ()
-  "Only the text of header cells gets `pretty-tables-header'."
+  "The cell text of header rows gets `pretty-tables-header'.
+The pipes do not, and the cell's own face comes first."
   (pretty-tables-tests--with-buffer
-      "Title\n\n| a<br>*b* | x |\n|---|---|\n| r0 | y |\n"
+      "Title\n\n| a *b* | x |\n|---|---|\n| r0 | y |\n"
     (let* ((rows (pretty-tables-tests--row-strings))
            (header (car rows))
-           (has (lambda (s) (and (memq 'pretty-tables-header
-                                       (pretty-tables-tests--faces s))
-                                 t))))
-      (should (equal (mapcar has rows) '(t nil nil)))
-      (should (funcall has (substring header 2 3)))      ; a
-      (should-not (funcall has (substring header 0 1)))  ; |
-      (should-not (funcall has (substring header 3 4)))  ; padding
-      ;; The cell's own face comes first.
+           (has (lambda (s face) (and (memq face (pretty-tables-tests--faces s))
+                                      t))))
+      (should (equal (mapcar (lambda (r) (funcall has r 'pretty-tables-header))
+                             rows)
+                     '(t nil nil)))
+      (should (funcall has (substring header 2 3) 'pretty-tables-header))
+      (should-not (funcall has (substring header 0 1) 'pretty-tables-header))
       (let ((face (get-text-property (string-search "b" header) 'face header)))
         (should (< (seq-position face 'bold)
                    (seq-position face 'pretty-tables-header)))))))
+
+(ert-deftest pretty-tables-test-header-row-face ()
+  "Each screen line of a header row gets `pretty-tables-header-row'.
+The pipes get it too; the newlines between screen lines do not."
+  (pretty-tables-tests--with-buffer
+      "Title\n\n| a<br>b | x |\n|---|---|\n| r0 | y |\n"
+    (let* ((rows (pretty-tables-tests--row-strings))
+           (header (car rows))
+           (newline (string-search "\n" header))
+           (has (lambda (s) (and (memq 'pretty-tables-header-row
+                                       (pretty-tables-tests--faces s))
+                                 t))))
+      (should (equal (mapcar has rows) '(t nil nil)))
+      (should (funcall has (substring header 0 1)))
+      (should (funcall has (substring header (1+ newline))))
+      (should-not (funcall has (substring header newline (1+ newline)))))))
 
 (ert-deftest pretty-tables-test-row-face ()
   "A row face inherits the package's face and takes only a background.

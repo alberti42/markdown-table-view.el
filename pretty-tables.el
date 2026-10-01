@@ -41,8 +41,8 @@
 ;; their cells are word-wrapped onto several screen lines.  Data rows
 ;; are drawn with alternating backgrounds (`pretty-tables-stripe-rows'),
 ;; and a line can be drawn under each data row
-;; (`pretty-tables-row-lines').  The text of header cells is drawn
-;; with the face `pretty-tables-header', bold by default.
+;; (`pretty-tables-row-lines').  The text of header rows is drawn with
+;; the face `pretty-tables-header', bold by default.
 ;;
 ;; The row point is on is shown as its raw text, so it can be edited and
 ;; its links followed.  After a scroll command, a row point moved onto
@@ -110,9 +110,16 @@ See `pretty-tables-row-lines'.")
 
 (defface pretty-tables-header
   '((t :inherit bold))
-  "Face added to the text of the header cells of a drawn table.
+  "Face added to the cell text of the header rows of a drawn table.
 It is added after the faces of the cell text, so a link in a header
-keeps its colours.  The pipes and the padding do not get it.")
+keeps its colours.  The pipes and the padding do not get it; see
+`pretty-tables-header-row'.")
+
+(defface pretty-tables-header-row
+  '((t))
+  "Face added to the whole of each header row of a drawn table.
+It covers the pipes and the padding too, so a background set on it
+fills the row.  It sets nothing by default.")
 
 (defvar-local pretty-tables--adaptor nil
   "The adaptor `pretty-tables-enable' was called with, or nil.
@@ -293,22 +300,27 @@ terminal without colours COLOUR is nil, and the value is FACE."
         (list :inherit face :background colour)
       face)))
 
+(defun pretty-tables--add-line-face (string face)
+  "Append FACE to each screen line of STRING, a drawn row.
+The newlines between the screen lines get no face: Emacs paints a
+newline with its face, which would widen every screen line but the
+last, whose newline is the buffer's."
+  (let ((start 0))
+    (dolist (line (split-string string "\n"))
+      (add-face-text-property start (+ start (length line)) face t string)
+      (setq start (+ start (length line) 1)))))
+
 (defun pretty-tables--decorate-row (string index last)
   "Add the row face and the row-line face to STRING, a data row.
 INDEX counts the data rows of the table from 0.  LAST is non-nil for
 the last data row, which gets no row line.  The faces are appended, so
 the faces of the cell text take precedence.
 The row face is `pretty-tables-row' or `pretty-tables-stripe' with a
-background, see `pretty-tables--row-face'.
-The newlines between the screen lines of STRING get no row face:
-Emacs paints a newline with its face, which would widen every screen
-line but the last, whose newline is the buffer's."
+background, see `pretty-tables--row-face'.  It is added with
+`pretty-tables--add-line-face'."
   (when pretty-tables-stripe-rows
-    (let ((face (pretty-tables--row-face (= (% index 2) 1)))
-          (start 0))
-      (dolist (line (split-string string "\n"))
-        (add-face-text-property start (+ start (length line)) face t string)
-        (setq start (+ start (length line) 1)))))
+    (pretty-tables--add-line-face
+     string (pretty-tables--row-face (= (% index 2) 1))))
   (when (and pretty-tables-row-lines (not last))
     ;; The last screen line of the row: `.' does not match a newline.
     (string-match ".*\\'" string)
@@ -356,16 +368,19 @@ starting at REVEALED is left as raw text."
               (string (progn
                         (when (eq kind 'header)
                           (dolist (paragraph (apply #'append cells))
-                            (add-face-text-property 0 (length paragraph)
-                                                    'pretty-tables-header
-                                                    t paragraph)))
+                            (add-face-text-property
+                             0 (length paragraph) 'pretty-tables-header t
+                             paragraph)))
                         (if (eq kind 'separator)
                             (funcall separator widths alignments)
                           (pretty-tables--draw-row cells widths alignments))))
               (ov (make-overlay beg (plist-get row :end) nil t nil)))
-         (when (eq kind 'data)
-           (setq index (1+ index))
-           (pretty-tables--decorate-row string index (= index (1- ndata))))
+         (pcase kind
+           ('data
+            (setq index (1+ index))
+            (pretty-tables--decorate-row string index (= index (1- ndata))))
+           ('header
+            (pretty-tables--add-line-face string 'pretty-tables-header-row)))
          (when table-face
            (add-face-text-property 0 (length string) table-face t string))
          (add-text-properties 0 (length string)
@@ -500,8 +515,7 @@ An adaptor calls this from its minor mode.  ADAPTOR is a plist:
 `:line-break' A regexp, matched ignoring case, that splits a cell
               into lines, or nil.
 `:face'       A face appended to every drawn row, after the cell's
-              own faces, `pretty-tables-header' and the row faces,
-              or nil.
+              own faces, the row faces and the header faces, or nil.
 `:invisible'  A function called with a buffer position that returns
               non-nil when the character there takes no room.  The
               default is `invisible-p'.
@@ -519,8 +533,8 @@ A table is a plist with these properties:
 A row is a plist with these properties:
 
 `:kind'         `header', `separator' or `data'.  Only data rows get
-                the row faces, and only the text of header cells
-                the face `pretty-tables-header'.
+                the row faces, and only header rows the faces
+                `pretty-tables-header' and `pretty-tables-header-row'.
 `:beg', `:end'  The bounds of the text the drawn row replaces, on one
                 line.
 `:cells'        A list of (BEG . END), the bounds of each cell's text

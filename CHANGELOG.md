@@ -14,8 +14,10 @@ to `X.Y.Z`.
 
 ### Added
 
-- The face `pretty-tables-header`, added to the text of the header cells
-  of a drawn table. It is bold by default.
+- The face `pretty-tables-header`, added to the cell text of the header
+  rows of a drawn table. It is bold by default.
+- The face `pretty-tables-header-row`, added to the whole of each header
+  row, pipes included, for a background. It sets nothing by default.
 
 ### Removed
 
