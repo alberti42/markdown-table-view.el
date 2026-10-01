@@ -12,6 +12,14 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 ## [Unreleased]
 
+### Fixed
+
+- The background of a data row that wraps over several screen lines ended a
+  few pixels further right on every screen line but the last. The newlines
+  between the screen lines no longer get the row's background.
+- `markdown-table-view-row` had no background until something loaded
+  `hl-line`, whose face it inherits. The package now loads `hl-line`.
+
 ## [0.1.0] - 2026-10-01
 
 ### Added

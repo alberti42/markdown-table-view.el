@@ -60,6 +60,8 @@
 (require 'treesit)
 (require 'jit-lock)
 (require 'subr-x)
+;; Defines the `hl-line' face, which `markdown-table-view-row' inherits.
+(require 'hl-line)
 
 (defgroup markdown-table-view nil
   "Aligned, wrapped display of Markdown tables."
@@ -309,13 +311,18 @@ ALIGNMENTS give each column's width and alignment."
   "Add the row, stripe and row-line faces to STRING, the drawing of a data row.
 INDEX counts the data rows of the table from 0.  LAST is non-nil for
 the last data row, which gets no row line.  The faces are appended, so
-the faces of the cell text take precedence."
+the faces of the cell text take precedence.
+The newlines between the screen lines of STRING get no background:
+Emacs paints a newline with its face, which would widen every screen
+line but the last, whose newline is the buffer's."
   (when markdown-table-view-stripe-rows
-    (add-face-text-property 0 (length string)
-                            (if (= (% index 2) 1)
-                                'markdown-table-view-stripe
-                              'markdown-table-view-row)
-                            t string))
+    (let ((face (if (= (% index 2) 1)
+                    'markdown-table-view-stripe
+                  'markdown-table-view-row))
+          (start 0))
+      (dolist (line (split-string string "\n"))
+        (add-face-text-property start (+ start (length line)) face t string)
+        (setq start (+ start (length line) 1)))))
   (when (and markdown-table-view-row-lines (not last))
     ;; The last screen line of the row: `.' does not match a newline.
     (string-match ".*\\'" string)

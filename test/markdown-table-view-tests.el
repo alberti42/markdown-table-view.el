@@ -266,6 +266,25 @@ The header and the delimiter row get neither."
                            (markdown-table-view-tests--row-strings))
                    '(nil nil row stripe row stripe)))))
 
+(ert-deftest markdown-table-view-test-stripes-not-on-newlines ()
+  "The newlines between the screen lines of a row get no background face."
+  (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+    (let* ((row (nth 4 (markdown-table-view-tests--row-strings)))
+           (newline (string-search "\n" row))
+           (faces (ensure-list (get-text-property newline 'face row))))
+      (should newline)
+      (should (memq 'markdown-table-view-row
+                    (ensure-list (get-text-property (1- newline) 'face row))))
+      (should (memq 'markdown-table-view-row
+                    (ensure-list (get-text-property (1+ newline) 'face row))))
+      (should-not (memq 'markdown-table-view-row faces))
+      (should-not (memq 'markdown-table-view-stripe faces)))))
+
+(ert-deftest markdown-table-view-test-row-face-defined ()
+  "The faces the row face inherits are defined once the package is loaded."
+  (should (facep 'hl-line))
+  (should (facep 'lazy-highlight)))
+
 (ert-deftest markdown-table-view-test-stripes-off ()
   "With `markdown-table-view-stripe-rows' nil, no row gets a background face."
   (let ((markdown-table-view-stripe-rows nil))
