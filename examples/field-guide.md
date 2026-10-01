@@ -1,15 +1,15 @@
 # A field guide to the Northern Marches
 
-An example document for `pretty-tables-for-markdown-mode`. The guild, the
-places and the creatures are invented; the table is shaped like real
+An example document for `pretty-tables-for-markdown-mode`. The guild,
+the places and the creatures are invented; the table is shaped like real
 ones, where most cells link to other documents. It is wider than
 `fill-column`, its cells hold one or two links each, and one cell uses
 `<br>` to start a new line.
 
 The linked files are not included, so the links do not open anything.
 They are not needed to show the problem: with the file names in the
-links, the raw rows of the table cannot be read, and this package
-draws them as a table that can.
+links, the raw rows of the table cannot be read, and this package draws
+them as a table that can.
 
 ## Creatures of the Marches
 
