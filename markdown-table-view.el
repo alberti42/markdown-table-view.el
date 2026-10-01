@@ -5,6 +5,7 @@
 ;; Author: Andrea Alberti <a.alberti82@gmail.com>
 ;; Maintainer: Andrea Alberti <a.alberti82@gmail.com>
 ;; Assisted-by: Claude:claude-opus-5-5
+;; URL: https://github.com/alberti42/markdown-table-view
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "31.1"))
 ;; Keywords: text, wp, convenience
