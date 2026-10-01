@@ -69,7 +69,7 @@ The link labels keep the faces `markdown-ts-mode` gives them, and clicking one f
 
 ![The table of examples/field-guide.md drawn by pretty-tables-for-markdown-mode](Screenshot.png)
 
-The screenshot shows `examples/field-guide.md` in a graphical frame, with the doom-opera-light theme, `fill-column` set to 72, and markup hidden with `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`).
+The screenshot shows [`examples/field-guide.md`](examples/field-guide.md) in a graphical frame, with the doom-opera-light theme, `fill-column` set to 72, and markup hidden with `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`).
 
 [`examples/field-guide.org`](examples/field-guide.org) holds the same table in Org, aligned by `org-table-align`. With `fill-column` set to 72, `pretty-tables-for-org-mode` draws its first two data rows as:
 
