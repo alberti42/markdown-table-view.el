@@ -12,6 +12,8 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-01
+
 ### Added
 
 - `markdown-table-view-mode`, a buffer-local minor mode for `markdown-ts-mode`
@@ -36,4 +38,5 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
   last, with the underline of the face `markdown-table-view-row-line`. It is
   off by default.
 
-[Unreleased]: https://github.com/alberti42/markdown-table-view.el/commits/main
+[Unreleased]: https://github.com/alberti42/markdown-table-view.el/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/alberti42/markdown-table-view.el/releases/tag/v0.1.0
