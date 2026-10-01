@@ -12,6 +12,11 @@ to `X.Y.Z`.
 
 ## [Unreleased]
 
+### Added
+
+- The face `pretty-tables-header`, added to the header rows of a drawn
+  table. It is bold by default.
+
 ### Removed
 
 - The customization groups `pretty-tables-for-markdown` and

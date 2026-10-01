@@ -418,6 +418,25 @@ The header and the separator row get neither."
                            (pretty-tables-tests--row-strings))
                    '(nil nil row stripe nil row)))))
 
+(ert-deftest pretty-tables-test-header-face ()
+  "Only header rows get `pretty-tables-header', and not on their newlines."
+  (pretty-tables-tests--with-buffer
+      "Title\n\n| a<br>*b* | x |\n|---|---|\n| r0 | y |\n"
+    (let* ((rows (pretty-tables-tests--row-strings))
+           (header (car rows))
+           (newline (string-search "\n" header))
+           (has (lambda (s) (and (memq 'pretty-tables-header
+                                       (pretty-tables-tests--faces s))
+                                 t))))
+      (should (equal (mapcar has rows) '(t nil nil)))
+      (should (funcall has (substring header 0 newline)))
+      (should (funcall has (substring header (1+ newline))))
+      (should-not (funcall has (substring header newline (1+ newline))))
+      ;; The cell's own face comes first.
+      (let ((face (get-text-property (string-search "b" header) 'face header)))
+        (should (< (seq-position face 'bold)
+                   (seq-position face 'pretty-tables-header)))))))
+
 (ert-deftest pretty-tables-test-row-face ()
   "A row face inherits the package's face and takes only a background.
 The background is the one of `hl-line' or `lazy-highlight', whatever
