@@ -71,21 +71,9 @@ The link labels keep the faces `markdown-ts-mode` gives them, and clicking one f
 
 The screenshot shows [`examples/field-guide.md`](examples/field-guide.md) in a graphical frame, with the doom-opera-light theme, `fill-column` set to 72, and markup hidden with `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`).
 
-[`examples/field-guide.org`](examples/field-guide.org) holds the same table in Org, aligned by `org-table-align`. With `fill-column` set to 72, `pretty-tables-for-org-mode` draws its first two data rows as:
+[`examples/field-guide.org`](examples/field-guide.org) holds the same table in Org, aligned by `org-table-align`. The screenshot below shows it drawn by `pretty-tables-for-org-mode`, with the same theme and `fill-column` set to 72.
 
-```text
-| Creature     | Habitat         | Guide entry      | Last sighting    |
-|--------------+-----------------+------------------+------------------|
-| Ash dragon   | Volcanic caves  | Ash dragons and  | Spring 1123, by  |
-|              | above the       | their hoards;    | the ranger Ilse  |
-|              | Cinder Pass     | Fire safety for  | Morrow           |
-|              |                 | travellers       |                  |
-| Marsh kraken | Deep pools of   | The kraken of    | A capsized ferry |
-|              | the Sallow Fens | fresh water      | at Reedmouth,    |
-|              |                 |                  | autumn 1122      |
-```
-
-[`Screenshot-org.png`](Screenshot-org.png) shows `examples/field-guide.org` in a graphical frame, with the doom-opera-light theme and `fill-column` set to 72.
+![The table of examples/field-guide.org drawn by pretty-tables-for-org-mode](Screenshot-org.png)
 
 ## Requirements
 
