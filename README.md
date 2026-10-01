@@ -67,7 +67,7 @@ With `markdown-ts-hide-markup` on and `fill-column` set to 72, `pretty-tables-fo
 
 The link labels keep the faces `markdown-ts-mode` gives them, and clicking one follows the link. Data rows are drawn with alternating backgrounds, which a text block cannot show; the screenshot below shows them.
 
-![The table of examples/field-guide.md drawn by pretty-tables-for-markdown-mode](Screenshot.png)
+![The table of examples/field-guide.md drawn by pretty-tables-for-markdown-mode](Screenshot-md.png)
 
 The screenshot shows [`examples/field-guide.md`](examples/field-guide.md) in a graphical frame, with the doom-opera-light theme, `fill-column` set to 72, and markup hidden with `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`).
 
