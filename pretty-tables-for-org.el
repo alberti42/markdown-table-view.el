@@ -1,0 +1,220 @@
+;;; pretty-tables-for-org.el --- Aligned, wrapped display of Org tables -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2026 Andrea Alberti
+
+;; Author: Andrea Alberti <a.alberti82@gmail.com>
+;; Maintainer: Andrea Alberti <a.alberti82@gmail.com>
+;; Assisted-by: Claude:claude-opus-5-5
+;; URL: https://github.com/alberti42/pretty-tables.el
+;; Version: 0.2.0
+;; Package-Requires: ((emacs "31.1") (pretty-tables "0.2.0"))
+;; Keywords: text, wp, convenience, outlines
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
+;; `pretty-tables-for-org-mode' is a buffer-local minor mode for
+;; `org-mode' that changes how Org tables are displayed and nothing
+;; else.  The buffer text is never modified.  The drawing is done by
+;; `pretty-tables'; this package finds the tables, their rows, their
+;; cells and the alignment of their columns.
+;;
+;; `org-table-align' pads the cells in the buffer text, so a raw Org
+;; table is already aligned.  The mode draws a table no wider than
+;; `pretty-tables-width', with the cells word-wrapped, and column widths
+;; come from the text a reader sees in each cell: the hidden part of a
+;; link (`org-link-descriptive') takes no room.  Text hidden by folding
+;; is read as if it were shown.
+;;
+;; A column is aligned as `org-table-align' aligns it: by the first
+;; `<l>', `<r>' or `<c>' cookie in it, or else to the right when the
+;; share of its non-empty cells that match `org-table-number-regexp' is
+;; at least `org-table-number-fraction'.  A row of cookies is drawn as a
+;; data row.  Columns that `org-table-shrink' narrows are read as they
+;; are displayed.  The rows above the first separator are the header
+;; when a data row follows that separator.  Table.el tables are not
+;; drawn.
+;;
+;; The row point is on is shown as its raw text, so it can be edited.
+;; After a scroll command, a row point moved onto stays drawn until the
+;; next command.  Clicking a character of a drawn row moves point to
+;; that character in the buffer, and opens the link there with
+;; `org-open-at-point' if there is one.
+
+;;; Code:
+
+(require 'org)
+(require 'org-element)
+(require 'org-fold)
+(require 'org-table)
+(require 'pretty-tables)
+
+(defgroup pretty-tables-for-org nil
+  "Aligned, wrapped display of Org tables."
+  :group 'pretty-tables
+  :prefix "pretty-tables-for-org-")
+
+;;; Reading the buffer
+
+(defun pretty-tables-for-org--row-cells (beg end)
+  "Return the cells of the row from BEG to END as (BEG . END) pairs.
+BEG is the first `|' of the row and END the end of its line.  The
+bounds exclude the pipes.  The last `|' may be missing."
+  (let (pipes cells)
+    (save-excursion
+      (goto-char beg)
+      (while (search-forward "|" end t)
+        (push (1- (point)) pipes)))
+    (setq pipes (nreverse pipes))
+    (unless (eql (car (last pipes)) (1- end))
+      (setq pipes (append pipes (list end))))
+    (while (cdr pipes)
+      (push (cons (1+ (car pipes)) (cadr pipes)) cells)
+      (setq pipes (cdr pipes)))
+    (nreverse cells)))
+
+(defun pretty-tables-for-org--alignments (rows)
+  "Return the column alignments of the table whose rows are ROWS.
+Each element is `left', `right' or `center'.  A column takes the
+alignment of its first `<l>', `<r>' or `<c>' cookie; a column without
+one is `right' when the share of its non-empty cells that match
+`org-table-number-regexp' is at least `org-table-number-fraction', and
+`left' otherwise.  This is the rule of `org-table-align'."
+  (let* ((texts (mapcar (lambda (row)
+                          (mapcar (lambda (cell)
+                                    (string-trim (buffer-substring-no-properties
+                                                  (car cell) (cdr cell))))
+                                  (plist-get row :cells)))
+                        (seq-remove (lambda (row)
+                                      (eq (plist-get row :kind) 'separator))
+                                    rows)))
+         (ncols (apply #'max 0 (mapcar #'length texts))))
+    (mapcar
+     (lambda (i)
+       (let ((numbers 0) (non-empty 0) cookie)
+         (dolist (row texts)
+           (let ((cell (or (nth i row) "")))
+             (cond (cookie)
+                   ((equal cell ""))
+                   ((string-match "\\`<\\([lrc]\\)[0-9]*>\\'" cell)
+                    (setq cookie (match-string 1 cell)))
+                   (t
+                    (setq non-empty (1+ non-empty))
+                    (when (string-match-p org-table-number-regexp cell)
+                      (setq numbers (1+ numbers)))))))
+         (pcase cookie
+           ("l" 'left)
+           ("r" 'right)
+           ("c" 'center)
+           (_ (if (>= numbers (* org-table-number-fraction non-empty))
+                  'right
+                'left)))))
+     (number-sequence 0 (1- ncols)))))
+
+(defun pretty-tables-for-org--table (beg end)
+  "Return the table whose rows lie from BEG to END.
+BEG is the start of the first row's line and END the end of the last
+row's.  The value is a table as `pretty-tables-enable' describes it."
+  (let (rows)
+    (save-excursion
+      (goto-char beg)
+      (while (< (point) end)
+        (when (looking-at "[ \t]*|")
+          (let ((rbeg (1- (match-end 0)))
+                (rend (pos-eol)))
+            (push (list :kind (if (looking-at-p org-table-hline-regexp)
+                                  'separator
+                                'data)
+                        :beg rbeg
+                        :end rend
+                        :cells (pretty-tables-for-org--row-cells rbeg rend))
+                  rows)))
+        (forward-line 1)))
+    (setq rows (nreverse rows))
+    ;; The rows above the first separator are the header when a data
+    ;; row follows the separator.
+    (let ((first (seq-position rows 'separator
+                               (lambda (row kind) (eq (plist-get row :kind) kind)))))
+      (when (and first
+                 (seq-find (lambda (row) (eq (plist-get row :kind) 'data))
+                           (nthcdr first rows)))
+        (dotimes (i first)
+          (plist-put (nth i rows) :kind 'header))))
+    (list :beg beg
+          :end end
+          :alignments (pretty-tables-for-org--alignments rows)
+          :rows rows)))
+
+(defun pretty-tables-for-org--tables (beg end)
+  "Return the Org tables that overlap BEG to END.
+Each is a table as `pretty-tables-enable' describes it.  Table.el
+tables and lines starting with `|' that are not in a table, as in a
+source block, are left out."
+  (save-excursion
+    (save-match-data
+      (goto-char beg)
+      (forward-line 0)
+      (let (tables)
+        (while (and (< (point) end)
+                    (re-search-forward org-table-line-regexp end t))
+          (let ((table (org-element-lineage (org-element-at-point) 'table t)))
+            (if (and table (eq (org-element-property :type table) 'org))
+                (let ((tend (org-element-property :contents-end table)))
+                  (push (pretty-tables-for-org--table
+                         (org-element-property :contents-begin table)
+                         (if (eq (char-before tend) ?\n) (1- tend) tend))
+                        tables)
+                  (goto-char tend))
+              (forward-line 1))))
+        (nreverse tables)))))
+
+(defun pretty-tables-for-org--draw-separator (widths _alignments)
+  "Return the string drawing a separator row for the column WIDTHS."
+  (concat "|"
+          (mapconcat (lambda (w) (make-string (+ 2 w) ?-)) widths "+")
+          "|"))
+
+(defun pretty-tables-for-org--invisible-p (pos)
+  "Return non-nil when the character at POS takes no room in a cell.
+It is the value of `invisible-p', except that text hidden by folding
+is read as if it were shown: a folded table is drawn too, and
+unfolding it does not draw it again."
+  (if (org-fold-folded-p pos)
+      ;; `text-properties-at' leaves out the properties that
+      ;; `char-property-alias-alist' makes `invisible' stand for, which
+      ;; is how folds hide text.
+      (invisible-p (plist-get (text-properties-at pos) 'invisible))
+    (invisible-p pos)))
+
+;;; Mode
+
+;;;###autoload
+(define-minor-mode pretty-tables-for-org-mode
+  "Display Org tables with aligned, wrapped columns.
+The buffer text is not changed.  The row point is on is shown as its
+raw text, except after a scroll command moved point onto it."
+  :lighter nil
+  (if pretty-tables-for-org-mode
+      (pretty-tables-enable
+       :tables #'pretty-tables-for-org--tables
+       :separator #'pretty-tables-for-org--draw-separator
+       :face 'org-table
+       :invisible #'pretty-tables-for-org--invisible-p
+       :follow #'org-open-at-point)
+    (pretty-tables-disable)))
+
+(provide 'pretty-tables-for-org)
+;;; pretty-tables-for-org.el ends here

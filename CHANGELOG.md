@@ -20,6 +20,11 @@ to `X.Y.Z`.
   `pretty-tables-min-column-width`, `pretty-tables-stripe-rows`,
   `pretty-tables-row-lines`, `pretty-tables-row`, `pretty-tables-stripe`
   and `pretty-tables-row-line`.
+- `pretty-tables-for-org-mode`, a buffer-local minor mode for `org-mode`
+  that draws Org tables as `pretty-tables-for-markdown-mode` draws Markdown
+  tables. A column is aligned as `org-table-align` aligns it, the hidden
+  part of a link takes no room, and clicking a link in a drawn row opens it
+  with `org-open-at-point`.
 
 ### Changed
 

@@ -71,7 +71,8 @@ jobs:
         run: |
           emacs -Q -batch \
             --eval '(setq byte-compile-error-on-warn t)' \
-            -L . -f batch-byte-compile pretty-tables.el pretty-tables-for-markdown.el
+            -L . -f batch-byte-compile \
+            pretty-tables.el pretty-tables-for-markdown.el pretty-tables-for-org.el
 
       # Docstring conventions, exiting non-zero on any finding.  Both flags
       # are set rather than left at their defaults, so the step reports the
@@ -85,8 +86,10 @@ jobs:
             (setq checkdoc-verb-check-experimental-flag nil)
             (dolist (file (list "pretty-tables.el"
                                 "pretty-tables-for-markdown.el"
+                                "pretty-tables-for-org.el"
                                 "test/pretty-tables-tests.el"
-                                "test/pretty-tables-for-markdown-tests.el"))
+                                "test/pretty-tables-for-markdown-tests.el"
+                                "test/pretty-tables-for-org-tests.el"))
               (checkdoc-file file))
             (if (get-buffer "*Warnings*")
                 (kill-emacs 1)
