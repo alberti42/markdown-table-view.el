@@ -10,6 +10,12 @@
 # a current checkout of package-lint, which is where a symbol newer than the
 # declared Emacs floor shows up.
 #
+# This repository ships three packages, each with its own MELPA recipe, so
+# the job runs once per recipe: what is checked is one package and the
+# single file that recipe ships, not the checkout as a whole.  melpazoid
+# installs an adaptor's dependency `pretty-tables' from MELPA, so until
+# `pretty-tables' is on MELPA the adaptors' jobs fail to byte-compile.
+#
 # It fails the build only on errors.
 
 name: melpazoid
@@ -27,7 +33,17 @@ concurrency:
 jobs:
   melpazoid:
     runs-on: ubuntu-latest
-    name: MELPA checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: pretty-tables
+            recipe: '(pretty-tables :fetcher github :repo "alberti42/pretty-tables.el" :files ("pretty-tables.el"))'
+          - package: pretty-tables-for-markdown
+            recipe: '(pretty-tables-for-markdown :fetcher github :repo "alberti42/pretty-tables.el" :files ("pretty-tables-for-markdown.el"))'
+          - package: pretty-tables-for-org
+            recipe: '(pretty-tables-for-org :fetcher github :repo "alberti42/pretty-tables.el" :files ("pretty-tables-for-org.el"))'
+    name: MELPA checks (${{ matrix.package }})
     # A passing run takes about 3 minutes.  Without a limit, a stalled
     # apt-get keeps the job running for GitHub's default of 6 hours.
     timeout-minutes: 15
@@ -61,5 +77,5 @@ jobs:
           LOCAL_REPO: ${{ github.workspace }}
           # The recipe MELPA would build from, so that what is checked here
           # is what MELPA would ship.
-          RECIPE: '(markdown-table-view :fetcher github :repo "alberti42/markdown-table-view.el")'
+          RECIPE: ${{ matrix.recipe }}
         run: make -C ~/melpazoid
