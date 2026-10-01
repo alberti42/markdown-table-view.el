@@ -20,6 +20,13 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 ### Fixed
 
+- Rows drawn with `markdown-table-view-stripe` were bold in themes that make
+  `lazy-highlight` bold, the `|` separators included, because the face
+  brought every attribute of `lazy-highlight`. The two faces now inherit
+  `markdown-ts-table`, and a data row is drawn with its face and only the
+  background of `hl-line` or `lazy-highlight`, read when the table is drawn.
+  A background set on the face itself takes their place. The tables are
+  drawn again when a theme is enabled or disabled.
 - The background of a data row that wraps over several screen lines ended a
   few pixels further right on every screen line but the last. The newlines
   between the screen lines no longer get the row's background.

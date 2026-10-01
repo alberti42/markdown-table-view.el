@@ -252,28 +252,37 @@ is read, as they do when jit-lock fontifies a window in chunks."
     (should (equal (car (last (markdown-table-view-tests--rows)))
                    "| x | one two      |\n|   | three four   |"))))
 
-(ert-deftest markdown-table-view-test-option-redraws ()
-  "Setting an option of the package draws the table again."
-  (markdown-table-view-tests--with-buffer markdown-table-view-tests--link-table
-    (should (overlay-get (car (last (markdown-table-view-tests--overlays)))
-                         'display))
-    (setq-local markdown-table-view-stripe-rows nil)
-    (jit-lock-fontify-now)
-    (should-not (seq-some (lambda (ov)
-                            (memq 'markdown-table-view-row
-                                  (markdown-table-view-tests--faces
-                                   (overlay-get ov 'markdown-table-view-string))))
-                          (markdown-table-view-tests--overlays)))))
+;; Batch frames have no colours, so the faces whose background the data
+;; rows take get one for the tests.
+(defconst markdown-table-view-tests--row-colour "#eeeeee"
+  "Background given to `hl-line' in the tests.")
 
-;;; Stripes and row lines
+(defconst markdown-table-view-tests--stripe-colour "#c0cfe1"
+  "Background given to `lazy-highlight' in the tests.")
+
+(set-face-attribute 'hl-line nil :background markdown-table-view-tests--row-colour)
+(set-face-attribute 'lazy-highlight nil
+                    :background markdown-table-view-tests--stripe-colour)
 
 (defun markdown-table-view-tests--faces (string)
   "Return the faces anywhere in STRING, as one flat list."
   (let (faces)
     (dotimes (i (length string))
       (let ((face (get-text-property i 'face string)))
-        (setq faces (append (ensure-list face) faces))))
+        (setq faces (append (if (keywordp (car-safe face))
+                                (list face)
+                              (ensure-list face))
+                            faces))))
     (delete-dups faces)))
+
+(defun markdown-table-view-tests--row-kind (faces)
+  "Return `row' or `stripe' for the row face among FACES, or nil."
+  (seq-some (lambda (face)
+              (and (consp face)
+                   (pcase (plist-get face :inherit)
+                     ('markdown-table-view-row 'row)
+                     ('markdown-table-view-stripe 'stripe))))
+            faces))
 
 (defconst markdown-table-view-tests--four-rows
   "# Title\n\n| a | b |\n|---|---|\n| r0 | x |\n| r1 | y |\n| r2 | z<br>w |\n| r3 | v |\n"
@@ -284,44 +293,96 @@ is read, as they do when jit-lock fontifies a window in chunks."
   (mapcar (lambda (ov) (overlay-get ov 'markdown-table-view-string))
           (markdown-table-view-tests--overlays)))
 
+(ert-deftest markdown-table-view-test-option-redraws ()
+  "Setting an option of the package draws the table again."
+  (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+    (should (seq-some (lambda (row)
+                        (markdown-table-view-tests--row-kind
+                         (markdown-table-view-tests--faces row)))
+                      (markdown-table-view-tests--row-strings)))
+    (setq-local markdown-table-view-stripe-rows nil)
+    (jit-lock-fontify-now)
+    (should-not (seq-some (lambda (row)
+                            (markdown-table-view-tests--row-kind
+                             (markdown-table-view-tests--faces row)))
+                          (markdown-table-view-tests--row-strings)))))
+
+;;; Stripes and row lines
+
 (ert-deftest markdown-table-view-test-stripes ()
   "Data rows alternate between the row and stripe faces.
 The header and the delimiter row get neither."
   (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
     (should (equal (mapcar (lambda (row)
-                             (let ((faces (markdown-table-view-tests--faces row)))
-                               (cond ((memq 'markdown-table-view-stripe faces) 'stripe)
-                                     ((memq 'markdown-table-view-row faces) 'row))))
+                             (markdown-table-view-tests--row-kind
+                              (markdown-table-view-tests--faces row)))
                            (markdown-table-view-tests--row-strings))
                    '(nil nil row stripe row stripe)))))
 
+(ert-deftest markdown-table-view-test-row-face ()
+  "A row face inherits the package's face and takes only a background.
+The background is the one of `hl-line' or `lazy-highlight', whatever
+else the theme gives those faces; a background set on the package's
+face takes its place."
+  (let ((weight (face-attribute 'lazy-highlight :weight))
+        (foreground (face-attribute 'lazy-highlight :foreground)))
+    (unwind-protect
+        (progn
+          (set-face-attribute 'lazy-highlight nil :weight 'bold :foreground "red")
+          (should (equal (markdown-table-view--row-face t)
+                         (list :inherit 'markdown-table-view-stripe
+                               :background markdown-table-view-tests--stripe-colour)))
+          (should (equal (markdown-table-view--row-face nil)
+                         (list :inherit 'markdown-table-view-row
+                               :background markdown-table-view-tests--row-colour)))
+          (should-not (eq (face-attribute 'markdown-table-view-stripe :weight nil t)
+                          'bold))
+          (set-face-attribute 'markdown-table-view-row nil :background "#123456")
+          (should (equal (plist-get (markdown-table-view--row-face nil) :background)
+                         "#123456")))
+      (set-face-attribute 'lazy-highlight nil :weight weight :foreground foreground)
+      (set-face-attribute 'markdown-table-view-row nil :background 'unspecified))))
+
+(ert-deftest markdown-table-view-test-theme-redraws ()
+  "Enabling a theme draws the tables again with the new background."
+  (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+    (unwind-protect
+        (progn
+          (set-face-attribute 'hl-line nil :background "#654321")
+          (run-hook-with-args 'enable-theme-functions 'user)
+          (jit-lock-fontify-now)
+          (should (member (list :inherit 'markdown-table-view-row
+                                :background "#654321")
+                          (markdown-table-view-tests--faces
+                           (nth 2 (markdown-table-view-tests--row-strings))))))
+      (set-face-attribute 'hl-line nil
+                          :background markdown-table-view-tests--row-colour))))
+
 (ert-deftest markdown-table-view-test-stripes-not-on-newlines ()
-  "The newlines between the screen lines of a row get no background face."
+  "The newlines between the screen lines of a row get no row face."
   (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
     (let* ((row (nth 4 (markdown-table-view-tests--row-strings)))
            (newline (string-search "\n" row))
-           (faces (ensure-list (get-text-property newline 'face row))))
+           (kind (lambda (pos)
+                   (markdown-table-view-tests--row-kind
+                    (markdown-table-view-tests--faces (substring row pos (1+ pos)))))))
       (should newline)
-      (should (memq 'markdown-table-view-row
-                    (ensure-list (get-text-property (1- newline) 'face row))))
-      (should (memq 'markdown-table-view-row
-                    (ensure-list (get-text-property (1+ newline) 'face row))))
-      (should-not (memq 'markdown-table-view-row faces))
-      (should-not (memq 'markdown-table-view-stripe faces)))))
+      (should (eq (funcall kind (1- newline)) 'row))
+      (should (eq (funcall kind (1+ newline)) 'row))
+      (should-not (funcall kind newline)))))
 
 (ert-deftest markdown-table-view-test-row-face-defined ()
-  "The faces the row face inherits are defined once the package is loaded."
+  "The faces whose background the rows take are defined once the package is."
   (should (facep 'hl-line))
   (should (facep 'lazy-highlight)))
 
 (ert-deftest markdown-table-view-test-stripes-off ()
-  "With `markdown-table-view-stripe-rows' nil, no row gets a background face."
+  "With `markdown-table-view-stripe-rows' nil, no row gets a row face."
   (let ((markdown-table-view-stripe-rows nil))
     (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
       (should-not (seq-some (lambda (row)
-                              (let ((faces (markdown-table-view-tests--faces row)))
-                                (or (memq 'markdown-table-view-stripe faces)
-                                    (memq 'markdown-table-view-row faces))))
+                              (markdown-table-view-tests--row-kind
+                               (markdown-table-view-tests--faces row)))
                             (markdown-table-view-tests--row-strings))))))
 
 (ert-deftest markdown-table-view-test-row-lines ()
@@ -349,15 +410,18 @@ The header and the delimiter row get neither."
                           (markdown-table-view-tests--row-strings)))))
 
 (ert-deftest markdown-table-view-test-stripe-under-cell-faces ()
-  "The stripe comes after the faces of the cell text."
+  "The row face comes after the faces of the cell text."
   (markdown-table-view-tests--with-buffer
       "# Title\n\n| a |\n|---|\n| x |\n| **b** |\n"
     (let* ((row (car (last (markdown-table-view-tests--row-strings))))
            (pos (string-search "b" row))
-           (face (get-text-property pos 'face row)))
-      (should (memq 'markdown-table-view-stripe face))
-      (should (< (seq-position face 'markdown-ts-bold)
-                 (seq-position face 'markdown-table-view-stripe))))))
+           (face (get-text-property pos 'face row))
+           (row-face (seq-position face 'markdown-table-view-stripe
+                                   (lambda (f stripe)
+                                     (and (consp f)
+                                          (eq (plist-get f :inherit) stripe))))))
+      (should row-face)
+      (should (< (seq-position face 'markdown-ts-bold) row-face)))))
 
 ;;; Parsing cells
 

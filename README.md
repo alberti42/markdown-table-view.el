@@ -106,7 +106,7 @@ With straight.el, from a local clone:
 
 Setting `fill-column` (`C-x f`) or one of these options draws the tables again in the buffers where the mode is on.
 
-The first, third, ... data rows get the face `markdown-table-view-row`, which inherits `hl-line`; the others get `markdown-table-view-stripe`, which inherits `lazy-highlight`, as agent-shell's tables do. The theme sets both backgrounds, for a light theme and a dark one alike. The line is the underline of the face `markdown-table-view-row-line`, so it takes no screen line of its own; in a terminal it is an ordinary underline. Both faces are added after the faces of the cell text, so a link or a code span keeps its own colours.
+The first, third, ... data rows are drawn with the face `markdown-table-view-row` and the background of `hl-line`; the others with `markdown-table-view-stripe` and the background of `lazy-highlight`, the face agent-shell's tables use. Both faces inherit `markdown-ts-table`, and only the background is taken from `hl-line` and `lazy-highlight`, so a theme that makes `lazy-highlight` bold does not make the rows bold. The theme sets both backgrounds, for a light theme and a dark one alike, and the tables are drawn again when a theme is enabled. A background set on `markdown-table-view-row` or `markdown-table-view-stripe` takes the place of the theme's. The line is the underline of the face `markdown-table-view-row-line`, so it takes no screen line of its own; in a terminal it is an ordinary underline. Both faces are added after the faces of the cell text, so a link or a code span keeps its own colours.
 
 ## Links and emphasis in table cells
 

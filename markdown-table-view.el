@@ -90,15 +90,19 @@ so it takes no screen line of its own."
   :type 'boolean)
 
 (defface markdown-table-view-row
-  '((t :inherit hl-line))
-  "Face added to the first, third, ... data rows of a drawn table.
-It inherits `hl-line', so the theme sets its background.  See
+  '((t :inherit markdown-ts-table))
+  "Face of the first, third, ... data rows of a drawn table.
+The row is drawn with this face and the background of `hl-line', so
+the theme sets the colour.  A background set on this face itself
+takes the place of the one of `hl-line'.  See
 `markdown-table-view-stripe-rows'.")
 
 (defface markdown-table-view-stripe
-  '((t :inherit lazy-highlight))
-  "Face added to the second, fourth, ... data rows of a drawn table.
-It inherits `lazy-highlight', so the theme sets its background.  See
+  '((t :inherit markdown-ts-table))
+  "Face of the second, fourth, ... data rows of a drawn table.
+The row is drawn with this face and the background of
+`lazy-highlight', so the theme sets the colour.  A background set on
+this face itself takes the place of the one of `lazy-highlight'.  See
 `markdown-table-view-stripe-rows'.")
 
 (defface markdown-table-view-row-line
@@ -305,18 +309,36 @@ ALIGNMENTS give each column's width and alignment."
     (when (overlay-get ov 'markdown-table-view)
       (delete-overlay ov))))
 
+(defun markdown-table-view--row-face (stripe)
+  "Return the face of a data row: the stripe face if STRIPE is non-nil.
+The value is `(:inherit FACE :background COLOUR)', FACE being
+`markdown-table-view-stripe' or `markdown-table-view-row'.  COLOUR is
+the background set on FACE itself, or else the resolved background of
+`lazy-highlight' or `hl-line'.  Only the background of those two faces
+is taken: some themes make `lazy-highlight' bold, for example.  On a
+terminal without colours COLOUR is nil, and the value is FACE."
+  (let* ((face (if stripe 'markdown-table-view-stripe 'markdown-table-view-row))
+         (own (face-attribute face :background nil nil))
+         (colour (if (stringp own)
+                     own
+                   (face-background (if stripe 'lazy-highlight 'hl-line) nil t))))
+    (if colour
+        (list :inherit face :background colour)
+      face)))
+
 (defun markdown-table-view--decorate-row (string index last)
-  "Add the row, stripe and row-line faces to STRING, the drawing of a data row.
+  "Add the row face and the row-line face to STRING, a data row.
 INDEX counts the data rows of the table from 0.  LAST is non-nil for
 the last data row, which gets no row line.  The faces are appended, so
 the faces of the cell text take precedence.
-The newlines between the screen lines of STRING get no background:
+The row face is `markdown-table-view-row' or
+`markdown-table-view-stripe' with a background, see
+`markdown-table-view--row-face'.
+The newlines between the screen lines of STRING get no row face:
 Emacs paints a newline with its face, which would widen every screen
 line but the last, whose newline is the buffer's."
   (when markdown-table-view-stripe-rows
-    (let ((face (if (= (% index 2) 1)
-                    'markdown-table-view-stripe
-                  'markdown-table-view-row))
+    (let ((face (markdown-table-view--row-face (= (% index 2) 1)))
           (start 0))
       (dolist (line (split-string string "\n"))
         (add-face-text-property start (+ start (length line)) face t string)
@@ -542,6 +564,17 @@ at the next redisplay, when the new value is in place."
         (when markdown-table-view-mode
           (font-lock-flush))))))
 
+(defun markdown-table-view--theme-changed (_theme)
+  "Draw the tables again after a theme is enabled or disabled.
+The drawn rows hold the backgrounds `markdown-table-view--row-face'
+read from the theme, so a new theme shows only once the tables are
+drawn again.  Runs from `enable-theme-functions'
+and `disable-theme-functions'."
+  (dolist (buffer (buffer-list))
+    (with-current-buffer buffer
+      (when markdown-table-view-mode
+        (font-lock-flush)))))
+
 ;;; Mode
 
 ;;;###autoload
@@ -563,7 +596,9 @@ code are fontified."
     (markdown-table-view--parse-cells t)
     ;; `add-variable-watcher' adds a function only once.
     (dolist (option markdown-table-view--options)
-      (add-variable-watcher option #'markdown-table-view--option-changed)))
+      (add-variable-watcher option #'markdown-table-view--option-changed))
+    (add-hook 'enable-theme-functions #'markdown-table-view--theme-changed)
+    (add-hook 'disable-theme-functions #'markdown-table-view--theme-changed))
    (t
     (markdown-table-view--parse-cells nil)
     (jit-lock-unregister #'markdown-table-view--fontify)
