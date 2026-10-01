@@ -12,6 +12,15 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 ## [Unreleased]
 
+### Added
+
+- `pretty-tables`, the package that draws the tables. It defines no mode:
+  an adaptor for one markup finds the tables and calls
+  `pretty-tables-enable`. Its options and faces are `pretty-tables-width`,
+  `pretty-tables-min-column-width`, `pretty-tables-stripe-rows`,
+  `pretty-tables-row-lines`, `pretty-tables-row`, `pretty-tables-stripe`
+  and `pretty-tables-row-line`.
+
 ### Changed
 
 - Setting `fill-column` or one of the package's options draws the tables
