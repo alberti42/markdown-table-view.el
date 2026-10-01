@@ -53,7 +53,11 @@ With `markdown-ts-hide-markup` on and `fill-column` set to 72, the mode draws th
 |                |                 |                 | autumn 1122     |
 ```
 
-The link labels keep the faces `markdown-ts-mode` gives them, and clicking one follows the link. Data rows are drawn with alternating backgrounds, which a text block cannot show.
+The link labels keep the faces `markdown-ts-mode` gives them, and clicking one follows the link. Data rows are drawn with alternating backgrounds, which a text block cannot show; the screenshot below shows them.
+
+![The table of examples/field-guide.md drawn by markdown-table-view-mode](Screenshot.png)
+
+The screenshot shows `examples/field-guide.md` in a graphical frame, with the doom-opera-light theme and `fill-column` set to 72. Markup is shown, so the `#` of the headings, the backticks and the `*` around the note in the Bog light row are visible. The link destinations are hidden by a setting of the author's configuration that is not part of this package. `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`) makes `markdown-ts-mode` hide all markup, the link destinations included.
 
 ## Requirements
 
