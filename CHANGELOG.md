@@ -93,5 +93,5 @@ to `X.Y.Z`.
   last, with the underline of the face `markdown-table-view-row-line`. It is
   off by default.
 
-[Unreleased]: https://github.com/alberti42/markdown-table-view.el/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/alberti42/markdown-table-view.el/releases/tag/v0.1.0
+[Unreleased]: https://github.com/alberti42/pretty-tables.el/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/alberti42/pretty-tables.el/releases/tag/v0.1.0
