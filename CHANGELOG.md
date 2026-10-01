@@ -12,6 +12,12 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 ## [Unreleased]
 
+### Changed
+
+- Setting `fill-column` or one of the package's options draws the tables
+  again. Before, a table changed only when it was drawn again for another
+  reason, for example after `M-x font-lock-update`.
+
 ### Fixed
 
 - The background of a data row that wraps over several screen lines ended a

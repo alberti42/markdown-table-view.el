@@ -236,6 +236,35 @@ is read, as they do when jit-lock fontifies a window in chunks."
     (markdown-table-view-mode -1)
     (should-not (markdown-table-view-tests--overlays))))
 
+;;; Options
+
+(ert-deftest markdown-table-view-test-fill-column-redraws ()
+  "Setting `fill-column' draws the table again with the new width."
+  (markdown-table-view-tests--with-buffer
+      "# Title\n\n| a | b |\n|---|---|\n| x | one two three four |\n"
+    (setq-local markdown-table-view-width nil)
+    (setq-local fill-column 80)
+    (jit-lock-fontify-now)
+    (should (equal (car (last (markdown-table-view-tests--rows)))
+                   "| x | one two three four |"))
+    (setq-local fill-column 20)
+    (jit-lock-fontify-now)
+    (should (equal (car (last (markdown-table-view-tests--rows)))
+                   "| x | one two      |\n|   | three four   |"))))
+
+(ert-deftest markdown-table-view-test-option-redraws ()
+  "Setting an option of the package draws the table again."
+  (markdown-table-view-tests--with-buffer markdown-table-view-tests--link-table
+    (should (overlay-get (car (last (markdown-table-view-tests--overlays)))
+                         'display))
+    (setq-local markdown-table-view-stripe-rows nil)
+    (jit-lock-fontify-now)
+    (should-not (seq-some (lambda (ov)
+                            (memq 'markdown-table-view-row
+                                  (markdown-table-view-tests--faces
+                                   (overlay-get ov 'markdown-table-view-string))))
+                          (markdown-table-view-tests--overlays)))))
+
 ;;; Stripes and row lines
 
 (defun markdown-table-view-tests--faces (string)

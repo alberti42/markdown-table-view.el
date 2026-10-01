@@ -80,15 +80,13 @@ When nil, use `fill-column'."
 (defcustom markdown-table-view-stripe-rows t
   "Non-nil means data rows are drawn with alternating backgrounds.
 The first, third, ... data rows get the face `markdown-table-view-row',
-the others `markdown-table-view-stripe'.  Tables already drawn change
-when they are drawn again, for example after \[font-lock-update]."
+the others `markdown-table-view-stripe'."
   :type 'boolean)
 
 (defcustom markdown-table-view-row-lines nil
   "Non-nil means a line is drawn under each data row but the last.
 The line is the underline of the face `markdown-table-view-row-line',
-so it takes no screen line of its own.  Tables already drawn change
-when they are drawn again, for example after \[font-lock-update]."
+so it takes no screen line of its own."
   :type 'boolean)
 
 (defface markdown-table-view-row
@@ -515,6 +513,35 @@ parsers made for the cells."
                 (append treesit-range-settings
                         markdown-table-view--range-settings))))
 
+;;; Options
+
+(defconst markdown-table-view--options
+  '(fill-column
+    markdown-table-view-width
+    markdown-table-view-min-column-width
+    markdown-table-view-stripe-rows
+    markdown-table-view-row-lines)
+  "Variables the drawing of a table depends on.
+Setting one draws the tables again; see
+`markdown-table-view--option-changed'.")
+
+(defvar markdown-table-view-mode)
+
+(defun markdown-table-view--option-changed (_symbol _value operation where)
+  "Draw the tables again after one of `markdown-table-view--options' is set.
+A variable watcher: OPERATION is how the variable changed, and WHERE
+is the buffer whose local value changed, or nil for the default value.
+The tables are drawn again in WHERE, or in every buffer when the
+default value changed, if the mode is on there.  A `let' binding does
+not draw them again.  The watcher runs before the value changes;
+`font-lock-flush' only marks the text, and jit-lock draws the tables
+at the next redisplay, when the new value is in place."
+  (when (memq operation '(set makunbound))
+    (dolist (buffer (if (buffer-live-p where) (list where) (buffer-list)))
+      (with-current-buffer buffer
+        (when markdown-table-view-mode
+          (font-lock-flush))))))
+
 ;;; Mode
 
 ;;;###autoload
@@ -533,7 +560,10 @@ code are fontified."
     (remove-hook 'jit-lock-functions #'markdown-table-view--fontify t)
     (add-hook 'jit-lock-functions #'markdown-table-view--fontify 90 t)
     (add-hook 'post-command-hook #'markdown-table-view--reveal nil t)
-    (markdown-table-view--parse-cells t))
+    (markdown-table-view--parse-cells t)
+    ;; `add-variable-watcher' adds a function only once.
+    (dolist (option markdown-table-view--options)
+      (add-variable-watcher option #'markdown-table-view--option-changed)))
    (t
     (markdown-table-view--parse-cells nil)
     (jit-lock-unregister #'markdown-table-view--fontify)
