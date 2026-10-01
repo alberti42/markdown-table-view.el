@@ -57,7 +57,7 @@ The link labels keep the faces `markdown-ts-mode` gives them, and clicking one f
 
 ![The table of examples/field-guide.md drawn by markdown-table-view-mode](Screenshot.png)
 
-The screenshot shows `examples/field-guide.md` in a graphical frame, with the doom-opera-light theme and `fill-column` set to 72. Markup is shown, so the `#` of the headings, the backticks and the `*` around the note in the Bog light row are visible. The link destinations are hidden by a setting of the author's configuration that is not part of this package. `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`) makes `markdown-ts-mode` hide all markup, the link destinations included.
+The screenshot shows `examples/field-guide.md` in a graphical frame, with the doom-opera-light theme, `fill-column` set to 72, and markup hidden with `C-c C-x C-m` (`markdown-ts-toggle-hide-markup`).
 
 ## Requirements
 
