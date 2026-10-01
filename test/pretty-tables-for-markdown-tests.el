@@ -84,6 +84,13 @@ End.
 "
   "A table whose second column holds a link.")
 
+(defun pretty-tables-for-markdown-tests--row-face-p (face)
+  "Return non-nil when FACE is a row face.
+Without a background colour, as in a batch frame, the row face is a
+symbol."
+  (memq (if (consp face) (plist-get face :inherit) face)
+        '(pretty-tables-row pretty-tables-stripe)))
+
 ;;; Drawing tables
 
 (ert-deftest pretty-tables-for-markdown-test-draw-delimiter ()
@@ -169,9 +176,9 @@ is read, as they do when jit-lock fontifies a window in chunks."
     (should (equal (mapcar (lambda (ov)
                              (let ((face (get-text-property
                                           2 'face (overlay-get ov 'pretty-tables-string))))
-                               (and (seq-some (lambda (f)
-                                                (and (consp f) (plist-get f :inherit)))
-                                              (ensure-list face))
+                               (and (seq-some
+                                     #'pretty-tables-for-markdown-tests--row-face-p
+                                     (ensure-list face))
                                     t)))
                            (pretty-tables-for-markdown-tests--overlays))
                    '(nil nil t t)))))
@@ -192,10 +199,10 @@ is read, as they do when jit-lock fontifies a window in chunks."
     (let* ((row (overlay-get (car (last (pretty-tables-for-markdown-tests--overlays)))
                              'pretty-tables-string))
            (face (get-text-property (string-search "b" row) 'face row))
-           (row-face (seq-position face 'pretty-tables-stripe
-                                   (lambda (f stripe)
-                                     (and (consp f)
-                                          (eq (plist-get f :inherit) stripe))))))
+           (row-face (seq-position
+                      face nil
+                      (lambda (f _)
+                        (pretty-tables-for-markdown-tests--row-face-p f)))))
       (should row-face)
       (should (< (seq-position face 'markdown-ts-bold) row-face)))))
 
