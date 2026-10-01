@@ -1,0 +1,25 @@
+#+title: A field guide to the Northern Marches
+
+An example document for =pretty-tables-for-org-mode=. The guild, the
+places and the creatures are invented; the table is shaped like real
+ones, where most cells link to other documents. It is wider than
+=fill-column=, and its cells hold one or two links each.
+
+The linked files are not included, so the links do not open anything.
+They are not needed to show the problem: =org-table-align= pads each
+cell to the width of the visible text, so the raw table is aligned, but
+each row is wider than the window. This package draws the table no
+wider than =fill-column=, with the cells word-wrapped.
+
+* Creatures of the Marches
+
+| Creature     | Habitat                                 | Guide entry                                              | Last sighting                                         |
+|--------------+-----------------------------------------+----------------------------------------------------------+-------------------------------------------------------|
+| Ash dragon   | Volcanic caves above the [[file:atlas/regions/cinder-pass.org::*Caves][Cinder Pass]]    | [[file:bestiary/dragons.org::*Ash dragon][Ash dragons and their hoards]]; [[file:handbook/fire.org::*Dragons][Fire safety for travellers]] | Spring 1123, by the ranger [[file:people/rangers.org::*Ilse Morrow][Ilse Morrow]]                |
+| Marsh kraken | Deep pools of the [[file:atlas/regions/sallow-fens.org::*Pools][Sallow Fens]]           | [[file:bestiary/sea-beasts.org::*Marsh kraken][The kraken of fresh water]]                                | A capsized ferry at [[file:atlas/towns/reedmouth.org::*Harbour][Reedmouth]], autumn 1122            |
+| Griffin      | Cliff nests on the [[file:atlas/regions/hollow-spires.org::*Cliffs][Hollow Spires]]        | [[file:bestiary/winged.org::*Griffin][Griffins]]; [[https://example.org/field-guide/griffin.png][Sketch]]                                         | Three nests counted in summer 1123                    |
+| Bog light    | Peat bogs at dusk                       | [[file:bestiary/spirits.org::*Bog light][Lights over the bog]]; [[file:handbook/travel.org::*After dark][Night travel]]                        | Every clear night; the guild stopped counting in 1120 |
+| Basilisk     | Abandoned mines of [[file:atlas/towns/greyhallow.org::*Mines][Greyhallow]]           | [[file:bestiary/reptiles.org::*Basilisk][Basilisks, and how to look away]]                          | Winter 1121, when two miners were turned to stone     |
+| Phoenix      | Unknown; it is seen only while it burns | [[file:bestiary/winged.org::*Phoenix][The phoenix question]]; [[https://example.org/guild/lectures/phoenix/][Lecture notes]]                      | Once, in 1098, over the old capital                   |
+| Mimic        | Any dungeon with a treasure chest in it | [[file:bestiary/oddities.org::*Mimic][Mimics]]; [[file:handbook/dungeons.org::*Chests][Opening chests safely]]                            | Last week, in the guild's own storeroom               |
+| Stone golem  | The gate of the ruins of [[file:atlas/ruins/old-varn.org::*Gate][Old Varn]]       | [[file:bestiary/constructs.org::*Stone golem][Golems and their makers]]                                  | Standing at the gate, as it has for 300 years         |

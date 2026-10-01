@@ -1,6 +1,6 @@
 # A field guide to the Northern Marches
 
-An example document for `markdown-table-view-mode`. The guild, the
+An example document for `pretty-tables-for-markdown-mode`. The guild, the
 places and the creatures are invented; the table is shaped like real
 ones, where most cells link to other documents. It is wider than
 `fill-column`, its cells hold one or two links each, and one cell uses
