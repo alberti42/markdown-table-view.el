@@ -1,4 +1,4 @@
-# pretty-tables
+# pretty-tables.el
 
 ![Made for GNU Emacs](https://img.shields.io/badge/Made%20for-GNU%20Emacs-7F5AB6?logo=gnuemacs&logoColor=white)
 [![melpazoid](https://github.com/alberti42/pretty-tables.el/actions/workflows/melpazoid.yml/badge.svg)](https://github.com/alberti42/pretty-tables.el/actions/workflows/melpazoid.yml)
