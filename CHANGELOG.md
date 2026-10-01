@@ -12,20 +12,7 @@ to `X.Y.Z`.
 
 ## [Unreleased]
 
-### Added
-
-- The face `pretty-tables-header`, added to the cell text of the header
-  rows of a drawn table. It is bold by default.
-- The face `pretty-tables-header-row`, added to the whole of each header
-  row, pipes included, for a background. It sets nothing by default.
-
-### Removed
-
-- The customization groups `pretty-tables-for-markdown` and
-  `pretty-tables-for-org`, which had no members. The options and faces are
-  in the group `pretty-tables`.
-
-## [0.2.0] - 2026-10-01
+## [0.2.0] - 2026-10-02
 
 ### Added
 
@@ -40,6 +27,10 @@ to `X.Y.Z`.
   tables. A column is aligned as `org-table-align` aligns it, the hidden
   part of a link takes no room, and clicking a link in a drawn row opens it
   with `org-open-at-point`.
+- The face `pretty-tables-header`, added to the cell text of the header
+  rows of a drawn table. It is bold by default.
+- The face `pretty-tables-header-row`, added to the whole of each header
+  row, pipes included, for a background. It sets nothing by default.
 
 ### Changed
 
