@@ -49,5 +49,5 @@ jobs:
           LOCAL_REPO: ${{ github.workspace }}
           # The recipe MELPA would build from, so that what is checked here
           # is what MELPA would ship.
-          RECIPE: '(markdown-table-view :fetcher github :repo "alberti42/markdown-table-view")'
+          RECIPE: '(markdown-table-view :fetcher github :repo "alberti42/markdown-table-view.el")'
         run: make -C ~/melpazoid

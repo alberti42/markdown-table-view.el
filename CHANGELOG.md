@@ -29,4 +29,4 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
   markup. The mode adds this rule only when `treesit-range-settings` does not
   already run the grammar on table cells.
 
-[Unreleased]: https://github.com/alberti42/markdown-table-view/commits/main
+[Unreleased]: https://github.com/alberti42/markdown-table-view.el/commits/main
