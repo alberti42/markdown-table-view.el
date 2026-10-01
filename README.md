@@ -9,33 +9,51 @@
 
 Column widths come from the text a reader sees in each cell: characters that are invisible (for example link markup hidden by `markdown-ts-hide-markup`) take no room. When the table is wider than `markdown-table-view-width`, the widest columns are narrowed and their cells are word-wrapped onto several screen lines. `<br>` in a cell starts a new line.
 
+## Why
+
+A table is there to give an overview: the reader sees the rows and columns together and compares them. Markdown writes each table row on one line, and once the cells hold links, a row is several times wider than the window. Emacs can show such a row in two ways, and both lose the overview:
+
+- With long lines wrapped, a row fills several screen lines, and nothing shows where one row ends and the next begins.
+- With long lines truncated, each row stays on one line and the window shows only its first columns: the reader scrolls sideways to read a row and never sees the whole table.
+
+`markdown-table-view-mode` draws the table no wider than `markdown-table-view-width` (by default `fill-column`). Each cell stays in its column and wraps inside it, hidden link markup takes no room, and data rows alternate their backgrounds, so each row can be told from the next. The buffer text is never modified, so the file stays a plain Markdown table for every other tool.
+
+The pipe tables of GitHub Flavored Markdown, which `markdown-ts-mode` reads, have no syntax for writing one row over several lines. A proposal to add one, with continuation lines that begin with `┆` or `|~`, is under discussion on the CommonMark forum: [Let table rows wrap over several lines](https://talk.commonmark.org/t/let-table-rows-wrap-over-several-lines/9133). It would fix the problem at its root, in the source text, so that a table could be read with no viewer such as this package. It is mentioned here only as that alternative: this package does not implement it, and draws only tables whose rows are written on one line each. The most likely outcome is that no such syntax is adopted. If one is, the files already written with one row per line remain, and they need a viewer for some time.
+
 ## Example
 
-[`examples/demonstrations.md`](examples/demonstrations.md) holds a table whose rows are written on one line each:
+[`examples/field-guide.md`](examples/field-guide.md) holds an invented field guide. Markdown writes each table row on one line, so in a window 72 columns wide, with long lines wrapped, its first two data rows look like this:
 
 ```markdown
-| Demonstration | Catalogue | Index card |
-|---|---|---|
-| Additive colour mixing | [Additive colour mixing with three projectors](catalogue/catalogue.md#additive-colour-mixing-with-three-projectors) (p. 144); [Additive colour mixing](catalogue/catalogue.md#additive-colour-mixing) (p. 147) | [OP 14.11 Additive colour mixing](cards/optics.md#op-1411-additive-colour-mixing) (p. 192) |
-| Pixels of a monitor | [Pixels of a monitor](catalogue/catalogue.md#pixels-of-a-monitor) (p. 144) | — |
+| Creature | Habitat | Guide entry | Last sighting |
+|---|---|---|---|
+| Ash dragon | Volcanic caves above the [Cinder
+Pass](atlas/regions/cinder-pass.md#caves) | [Ash dragons and their
+hoards](bestiary/dragons.md#ash-dragon); [Fire safety for
+travellers](handbook/fire.md#dragons) | Spring 1123, by the ranger
+[Ilse Morrow](people/rangers.md#ilse-morrow) |
+| Marsh kraken | Deep pools of the [Sallow
+Fens](atlas/regions/sallow-fens.md#pools) | [The kraken of fresh
+water](bestiary/sea-beasts.md#marsh-kraken) | A capsized ferry at
+[Reedmouth](atlas/towns/reedmouth.md#harbour), autumn 1122 |
 ```
 
 With `markdown-ts-hide-markup` on and `fill-column` set to 72, the mode draws those rows as:
 
 ```text
-| Demonstration        | Catalogue             | Index card            |
-|----------------------|-----------------------|-----------------------|
-| Additive colour      | Additive colour       | OP 14.11 Additive     |
-| mixing               | mixing with three     | colour mixing         |
-|                      | projectors (p. 144);  | (p. 192)              |
-|                      | Additive              |                       |
-|                      | colour mixing (p.     |                       |
-|                      | 147)                  |                       |
-| Pixels of a monitor  | Pixels of a monitor   |                       |
-|                      | (p. 144)              |                       |
+| Creature       | Habitat         | Guide entry     | Last sighting   |
+|----------------|-----------------|-----------------|-----------------|
+| Ash dragon     | Volcanic caves  | Ash dragons and | Spring 1123, by |
+|                | above the       | their hoards;   | the ranger Ilse |
+|                | Cinder Pass     | Fire safety for | Morrow          |
+|                |                 | travellers      |                 |
+| Marsh kraken   | Deep pools of   | The kraken of   | A capsized      |
+|                | the Sallow Fens | fresh water     | ferry at        |
+|                |                 |                 | Reedmouth,      |
+|                |                 |                 | autumn 1122     |
 ```
 
-The link labels keep the faces `markdown-ts-mode` gives them, and clicking one follows the link.
+The link labels keep the faces `markdown-ts-mode` gives them, and clicking one follows the link. Data rows are drawn with alternating backgrounds, which a text block cannot show.
 
 ## Requirements
 
