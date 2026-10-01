@@ -1,5 +1,10 @@
 # markdown-table-view
 
+![Made for GNU Emacs](https://img.shields.io/badge/Made%20for-GNU%20Emacs-7F5AB6?logo=gnuemacs&logoColor=white)
+[![melpazoid](https://github.com/alberti42/markdown-table-view/actions/workflows/melpazoid.yml/badge.svg)](https://github.com/alberti42/markdown-table-view/actions/workflows/melpazoid.yml)
+[![CI](https://github.com/alberti42/markdown-table-view/actions/workflows/ci.yml/badge.svg)](https://github.com/alberti42/markdown-table-view/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/github/license/alberti42/markdown-table-view)](LICENSE)
+
 `markdown-table-view-mode` is a buffer-local minor mode for the `markdown-ts-mode` bundled with Emacs 31. It changes how pipe tables are displayed and nothing else: the buffer text is never modified, and nothing of `markdown-ts-mode` is replaced or advised.
 
 Column widths come from the text a reader sees in each cell: characters that are invisible (for example link markup hidden by `markdown-ts-hide-markup`) take no room. When the table is wider than `markdown-table-view-width`, the widest columns are narrowed and their cells are word-wrapped onto several screen lines. `<br>` in a cell starts a new line.
@@ -87,6 +92,22 @@ make test
 ```
 
 The tests run in `emacs --batch --quick`. The tests that draw tables need the `markdown` and `markdown-inline` grammars and are skipped without them.
+
+The CI workflow installs both grammars and runs byte-compilation, checkdoc and the tests on Emacs 31.1 and on Emacs master. The melpazoid workflow runs the checks MELPA's reviewers run.
+
+## Versions and changes
+
+Version numbers follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). [`CHANGELOG.md`](CHANGELOG.md) follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and the text of each GitHub release is its version's section there.
+
+## Verifying a release
+
+Each GitHub release carries `markdown-table-view-X.Y.Z.tar.gz`, built from the tag with `git archive`, the file `markdown-table-view.el`, and `SHA256SUMS`. The release workflow attests the provenance of the first two: a signed statement that the workflow produced these bytes from the tag's commit. To check a downloaded file:
+
+```sh
+gh attestation verify markdown-table-view-X.Y.Z.tar.gz --repo alberti42/markdown-table-view
+```
+
+`SHA256SUMS` only shows that a download is not corrupted, because it is published beside the files it describes. The attestation is kept in GitHub's attestation store, so replacing a release asset does not replace its attestation.
 
 ## License
 

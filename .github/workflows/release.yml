@@ -1,0 +1,141 @@
+name: Release
+
+# Push a version tag (v0.1.0) to pack the package, attest the provenance of
+# what was packed, and publish a *draft* GitHub release with it attached.
+# Review the draft and click Publish.  The body is the tag's section of
+# CHANGELOG.md, so move [Unreleased] into a dated version heading before
+# tagging; a tag with no such section is refused.
+#
+# The tag must equal the `Version:' header of markdown-table-view.el.
+#
+# Runnable by hand: `workflow_dispatch' packs and attests exactly as a tag
+# would and stops before publishing anything, because the `release' job is
+# the only one it does not run.  Dispatch it against the `Unreleased'
+# section to test the workflow before a release is cut.
+#
+# To verify a downloaded asset:
+#
+#     gh attestation verify markdown-table-view-0.1.0.tar.gz \
+#       --repo alberti42/markdown-table-view
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      section:
+        description: 'Changelog section to build against ("Unreleased" for a dry run)'
+        default: 'Unreleased'
+        required: true
+
+# `contents' publishes the release.  `id-token' mints the OIDC token that
+# proves which workflow asks for the attestation, and `attestations' writes
+# the attestation to the repository's attestation store.
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: What is being built
+        id: what
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "section=${{ inputs.section }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "section=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Only a tag claims to be a release, so only a tag has to match one.
+      - name: The tag must equal the Version header
+        if: github.event_name == 'push'
+        run: |
+          HEADER=$(sed -n 's/^;; Version: //p' markdown-table-view.el)
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "header=$HEADER  tag=$TAG"
+          test "$TAG" = "$HEADER" || {
+            echo "::error::markdown-table-view.el says Version: $HEADER, the tag says $TAG"
+            exit 1; }
+
+      # The changelog is the only place release notes are written.
+      - name: Take the release body out of the changelog
+        env:
+          SECTION: ${{ steps.what.outputs.section }}
+        run: |
+          # Stops at the next version heading, and at the link-reference
+          # block at the foot of the file, which follows the last section.
+          awk -v v="$SECTION" '
+            $0 ~ "^## \\[" v "\\]"  { inside = 1; next }
+            inside && /^## \[/      { exit }
+            inside && /^\[.*\]: /   { exit }
+            inside                  { print }
+          ' CHANGELOG.md > body.md
+          test -s body.md || {
+            echo "::error::CHANGELOG.md has no '## [$SECTION]' section; move [Unreleased] into one"
+            exit 1; }
+          cat body.md
+
+      # GitHub's own "Source code (tar.gz)" is generated on demand, and its
+      # checksum has changed before for archives already published.  This
+      # archive is reproducible from the tag: `git archive' dates every entry
+      # from the commit, and `gzip -n' leaves the timestamp and the file name
+      # out of the gzip header.  The single file is attached too, for
+      # `M-x package-install-file'.
+      - name: Pack
+        env:
+          SECTION: ${{ steps.what.outputs.section }}
+          REF: ${{ github.event_name == 'push' && github.ref_name || 'HEAD' }}
+        run: |
+          mkdir assets
+          git archive --format=tar --prefix="markdown-table-view-$SECTION/" "$REF" \
+            | gzip -9n > "assets/markdown-table-view-$SECTION.tar.gz"
+          git show "$REF:markdown-table-view.el" > assets/markdown-table-view.el
+          tar -tzf "assets/markdown-table-view-$SECTION.tar.gz"
+          ls -l assets
+
+      # SHA256SUMS, published beside the assets, says a download was not
+      # corrupted; whoever could replace an asset could replace it too.  An
+      # attestation is a signed statement that this workflow, at this
+      # commit, produced these bytes, kept in GitHub's attestation store
+      # rather than among the assets.  It is made here, in the job that
+      # packed the files, so a dry run exercises it too.
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: assets/*
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: release
+          path: |
+            assets/*
+            body.md
+          if-no-files-found: error
+
+  # The only job a dry run does not run: it is the one that creates
+  # something.
+  release:
+    needs: pack
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: release
+
+      - name: Checksums
+        run: |
+          cd assets && sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: assets/*
+          body_path: body.md
+          make_latest: true
+          draft: true
+          prerelease: false

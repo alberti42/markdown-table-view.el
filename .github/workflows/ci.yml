@@ -1,0 +1,98 @@
+# Byte-compilation, checkdoc and the ERT suite, on every push to main and
+# every pull request.
+#
+# The tests that draw tables need the `markdown' and `markdown-inline'
+# tree-sitter grammars and skip themselves without them.  A run that skipped
+# them would pass while testing almost nothing, so the grammars are installed
+# first and a step fails when either is missing.  They are built from the
+# repository and commit `markdown-ts-mode' records in
+# `treesit-language-source-alist', which needs git and a C compiler; the
+# runner has both.
+#
+# The matrix is the declared floor (31.1, the `Package-Requires'), then
+# master.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version: ['31.1', 'snapshot']
+    name: Emacs ${{ matrix.emacs_version }}
+    # A snapshot Emacs breaks for reasons that are not this package's;
+    # it is here as early warning, not as a gate.
+    continue-on-error: ${{ matrix.emacs_version == 'snapshot' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+
+      - name: Report version
+        run: emacs --version | head -1
+
+      # The clone from GitHub can fail on an otherwise healthy runner, so
+      # the install is tried three times.
+      - name: Install the markdown grammars
+        run: |
+          for attempt in 1 2 3; do
+            if emacs -Q -batch --eval '(progn
+              (require (quote markdown-ts-mode))
+              (dolist (lang (quote (markdown markdown-inline)))
+                (treesit-install-language-grammar lang)))'; then
+              exit 0
+            fi
+            echo "Grammar install failed (attempt $attempt of 3); retrying in 15s"
+            sleep 15
+          done
+          exit 1
+
+      - name: Check the grammars load
+        run: |
+          emacs -Q -batch --eval '(dolist (lang (quote (markdown markdown-inline)))
+            (unless (treesit-language-available-p lang)
+              (message "Grammar %s is not available" lang)
+              (kill-emacs 1)))'
+
+      - name: Byte-compile, warnings as errors
+        run: |
+          emacs -Q -batch \
+            --eval '(setq byte-compile-error-on-warn t)' \
+            -L . -f batch-byte-compile markdown-table-view.el
+
+      # Docstring conventions, exiting non-zero on any finding.  Both flags
+      # are set rather than left at their defaults, so the step reports the
+      # same thing on every Emacs: the experimental verb check defaults to t
+      # up to Emacs 30 and nil from 31.
+      - name: Checkdoc
+        run: |
+          emacs -Q -batch --eval '(progn
+            (require (quote checkdoc))
+            (setq checkdoc-force-docstrings-flag nil)
+            (setq checkdoc-verb-check-experimental-flag nil)
+            (dolist (file (list "markdown-table-view.el"
+                                "test/markdown-table-view-tests.el"))
+              (checkdoc-file file))
+            (if (get-buffer "*Warnings*")
+                (kill-emacs 1)
+              (message "checkdoc: clean")))'
+
+      # The byte-compile step above leaves markdown-table-view.elc in the
+      # checkout; the tests load the source, which is what they test.
+      - name: ERT
+        run: |
+          rm -f markdown-table-view.elc
+          make test
