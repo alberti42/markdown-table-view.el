@@ -28,5 +28,12 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
   `markdown-ts-mode` fontifies their links, emphasis and code and hides their
   markup. The mode adds this rule only when `treesit-range-settings` does not
   already run the grammar on table cells.
+- Data rows are drawn with alternating backgrounds: the faces
+  `markdown-table-view-row`, which inherits `hl-line`, and
+  `markdown-table-view-stripe`, which inherits `lazy-highlight`.
+  `markdown-table-view-stripe-rows` turns them off.
+- `markdown-table-view-row-lines` draws a line under each data row but the
+  last, with the underline of the face `markdown-table-view-row-line`. It is
+  off by default.
 
 [Unreleased]: https://github.com/alberti42/markdown-table-view.el/commits/main

@@ -44,7 +44,10 @@
 ;; (for example link markup hidden by `markdown-ts-hide-markup') take no
 ;; room.  When the table is wider than `markdown-table-view-width',
 ;; the widest columns are narrowed and their cells are word-wrapped onto
-;; several screen lines.  `<br>' in a cell starts a new line.
+;; several screen lines.  `<br>' in a cell starts a new line.  Data rows
+;; are drawn with alternating backgrounds (`markdown-table-view-stripe-rows'),
+;; and a line can be drawn under each data row
+;; (`markdown-table-view-row-lines').
 ;;
 ;; The row point is on is shown as its raw text, so it can be edited and
 ;; its links followed with RET.  After a scroll command, a row point
@@ -71,6 +74,41 @@ When nil, use `fill-column'."
 (defcustom markdown-table-view-min-column-width 8
   "Width below which a column is not narrowed to fit the table width."
   :type 'natnum)
+
+(defcustom markdown-table-view-stripe-rows t
+  "Non-nil means data rows are drawn with alternating backgrounds.
+The first, third, ... data rows get the face `markdown-table-view-row',
+the others `markdown-table-view-stripe'.  Tables already drawn change
+when they are drawn again, for example after \[font-lock-update]."
+  :type 'boolean)
+
+(defcustom markdown-table-view-row-lines nil
+  "Non-nil means a line is drawn under each data row but the last.
+The line is the underline of the face `markdown-table-view-row-line',
+so it takes no screen line of its own.  Tables already drawn change
+when they are drawn again, for example after \[font-lock-update]."
+  :type 'boolean)
+
+(defface markdown-table-view-row
+  '((t :inherit hl-line))
+  "Face added to the first, third, ... data rows of a drawn table.
+It inherits `hl-line', so the theme sets its background.  See
+`markdown-table-view-stripe-rows'.")
+
+(defface markdown-table-view-stripe
+  '((t :inherit lazy-highlight))
+  "Face added to the second, fourth, ... data rows of a drawn table.
+It inherits `lazy-highlight', so the theme sets its background.  See
+`markdown-table-view-stripe-rows'.")
+
+(defface markdown-table-view-row-line
+  '((((class color) (min-colors 88) (background light))
+     :underline (:color "gray75" :position t))
+    (((class color) (min-colors 88) (background dark))
+     :underline (:color "gray40" :position t))
+    (t :underline t))
+  "Face added to the last screen line of each data row but the last.
+See `markdown-table-view-row-lines'.")
 
 (defvar-local markdown-table-view--range-settings nil
   "The entries this mode added to `treesit-range-settings', or nil.")
@@ -267,6 +305,23 @@ ALIGNMENTS give each column's width and alignment."
     (when (overlay-get ov 'markdown-table-view)
       (delete-overlay ov))))
 
+(defun markdown-table-view--decorate-row (string index last)
+  "Add the row, stripe and row-line faces to STRING, the drawing of a data row.
+INDEX counts the data rows of the table from 0.  LAST is non-nil for
+the last data row, which gets no row line.  The faces are appended, so
+the faces of the cell text take precedence."
+  (when markdown-table-view-stripe-rows
+    (add-face-text-property 0 (length string)
+                            (if (= (% index 2) 1)
+                                'markdown-table-view-stripe
+                              'markdown-table-view-row)
+                            t string))
+  (when (and markdown-table-view-row-lines (not last))
+    ;; The last screen line of the row: `.' does not match a newline.
+    (string-match ".*\\'" string)
+    (add-face-text-property (match-beginning 0) (length string)
+                            'markdown-table-view-row-line t string)))
+
 (defun markdown-table-view--render-table (table revealed)
   "Cover each row of TABLE with an overlay that draws it aligned.
 The row starting at REVEALED is left as raw text."
@@ -304,7 +359,11 @@ The row starting at REVEALED is left as raw text."
          (alignments (let ((a (and delimiter
                                    (markdown-table-view--alignments delimiter))))
                        (mapcar (lambda (i) (or (nth i a) 'left))
-                               (number-sequence 0 (1- ncols))))))
+                               (number-sequence 0 (1- ncols)))))
+         (ndata (seq-count (lambda (row) (equal (treesit-node-type row)
+                                                "pipe_table_row"))
+                           rows))
+         (index -1))
     (seq-mapn
      (lambda (row cells)
        (let* ((beg (treesit-node-start row))
@@ -314,6 +373,10 @@ The row starting at REVEALED is left as raw text."
                           (markdown-table-view--draw-delimiter widths alignments)
                         (markdown-table-view--draw-row cells widths alignments)))
               (ov (make-overlay beg end nil t nil)))
+         (when (equal (treesit-node-type row) "pipe_table_row")
+           (setq index (1+ index))
+           (markdown-table-view--decorate-row string index
+                                              (= index (1- ndata))))
          (add-face-text-property 0 (length string) 'markdown-ts-table t string)
          (add-text-properties 0 (length string)
                               (list 'keymap markdown-table-view-row-map

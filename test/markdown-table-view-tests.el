@@ -236,6 +236,81 @@ is read, as they do when jit-lock fontifies a window in chunks."
     (markdown-table-view-mode -1)
     (should-not (markdown-table-view-tests--overlays))))
 
+;;; Stripes and row lines
+
+(defun markdown-table-view-tests--faces (string)
+  "Return the faces anywhere in STRING, as one flat list."
+  (let (faces)
+    (dotimes (i (length string))
+      (let ((face (get-text-property i 'face string)))
+        (setq faces (append (ensure-list face) faces))))
+    (delete-dups faces)))
+
+(defconst markdown-table-view-tests--four-rows
+  "# Title\n\n| a | b |\n|---|---|\n| r0 | x |\n| r1 | y |\n| r2 | z<br>w |\n| r3 | v |\n"
+  "A table with four data rows; the third is two screen lines tall.")
+
+(defun markdown-table-view-tests--row-strings ()
+  "Return the string drawing each row, with its text properties."
+  (mapcar (lambda (ov) (overlay-get ov 'markdown-table-view-string))
+          (markdown-table-view-tests--overlays)))
+
+(ert-deftest markdown-table-view-test-stripes ()
+  "Data rows alternate between the row and stripe faces.
+The header and the delimiter row get neither."
+  (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+    (should (equal (mapcar (lambda (row)
+                             (let ((faces (markdown-table-view-tests--faces row)))
+                               (cond ((memq 'markdown-table-view-stripe faces) 'stripe)
+                                     ((memq 'markdown-table-view-row faces) 'row))))
+                           (markdown-table-view-tests--row-strings))
+                   '(nil nil row stripe row stripe)))))
+
+(ert-deftest markdown-table-view-test-stripes-off ()
+  "With `markdown-table-view-stripe-rows' nil, no row gets a background face."
+  (let ((markdown-table-view-stripe-rows nil))
+    (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+      (should-not (seq-some (lambda (row)
+                              (let ((faces (markdown-table-view-tests--faces row)))
+                                (or (memq 'markdown-table-view-stripe faces)
+                                    (memq 'markdown-table-view-row faces))))
+                            (markdown-table-view-tests--row-strings))))))
+
+(ert-deftest markdown-table-view-test-row-lines ()
+  "The last screen line of each data row but the last has the row-line face."
+  (let ((markdown-table-view-row-lines t))
+    (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+      (let* ((rows (markdown-table-view-tests--row-strings))
+             (lined (lambda (s)
+                      (and (memq 'markdown-table-view-row-line
+                                 (markdown-table-view-tests--faces s))
+                           t))))
+        (should (equal (mapcar lined rows) '(nil nil t t t nil)))
+        ;; In the two-line row, only the second screen line is underlined.
+        (let* ((row (nth 4 rows))
+               (newline (string-search "\n" row)))
+          (should-not (funcall lined (substring row 0 newline)))
+          (should (funcall lined (substring row (1+ newline)))))))))
+
+(ert-deftest markdown-table-view-test-row-lines-off ()
+  "By default no row line is drawn."
+  (markdown-table-view-tests--with-buffer markdown-table-view-tests--four-rows
+    (should-not (seq-some (lambda (row)
+                            (memq 'markdown-table-view-row-line
+                                  (markdown-table-view-tests--faces row)))
+                          (markdown-table-view-tests--row-strings)))))
+
+(ert-deftest markdown-table-view-test-stripe-under-cell-faces ()
+  "The stripe comes after the faces of the cell text."
+  (markdown-table-view-tests--with-buffer
+      "# Title\n\n| a |\n|---|\n| x |\n| **b** |\n"
+    (let* ((row (car (last (markdown-table-view-tests--row-strings))))
+           (pos (string-search "b" row))
+           (face (get-text-property pos 'face row)))
+      (should (memq 'markdown-table-view-stripe face))
+      (should (< (seq-position face 'markdown-ts-bold)
+                 (seq-position face 'markdown-table-view-stripe))))))
+
 ;;; Parsing cells
 
 (defun markdown-table-view-tests--cell-pos (text)
