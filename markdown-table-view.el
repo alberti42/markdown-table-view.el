@@ -255,12 +255,9 @@ ALIGNMENTS give each column's width and alignment."
     (when (overlay-get ov 'markdown-table-view)
       (delete-overlay ov))))
 
-(defun markdown-table-view--point-row-p (beg end)
-  "Return non-nil when point is on the row from BEG to END."
-  (and (>= (point) beg) (<= (point) end)))
-
-(defun markdown-table-view--render-table (table)
-  "Cover each row of TABLE with an overlay that draws it aligned."
+(defun markdown-table-view--render-table (table revealed)
+  "Cover each row of TABLE with an overlay that draws it aligned.
+The row starting at REVEALED is left as raw text."
   ;; The old overlays go first: the cells are read with
   ;; `get-char-property', which would return their `display' strings.
   (markdown-table-view--delete-overlays (treesit-node-start table)
@@ -313,7 +310,7 @@ ALIGNMENTS give each column's width and alignment."
          (overlay-put ov 'markdown-table-view t)
          (overlay-put ov 'markdown-table-view-string string)
          (overlay-put ov 'evaporate t)
-         (if (markdown-table-view--point-row-p beg end)
+         (if (eql beg revealed)
              (setq markdown-table-view--revealed ov)
            (overlay-put ov 'display string))))
      rows data)))
@@ -323,16 +320,20 @@ ALIGNMENTS give each column's width and alignment."
 Runs from `jit-lock-functions' after font-lock, since the drawing reads
 the faces and invisibility font-lock puts on the cells.  A table is
 drawn whole, so the parts of it outside BEG to END are fontified
-first."
+first.
+The row `markdown-table-view--reveal' revealed stays raw.  Point is not
+used: `jit-lock-fontify-now' moves it to the start of the chunk."
   (unless markdown-table-view--rendering
-    (let ((markdown-table-view--rendering t))
+    (let ((markdown-table-view--rendering t)
+          (revealed (and markdown-table-view--revealed
+                         (overlay-start markdown-table-view--revealed))))
       (markdown-table-view--delete-overlays beg end)
       (when (treesit-parser-list nil 'markdown)
         (dolist (table (treesit-query-capture 'markdown '((pipe_table) @table)
                                               beg end t))
           (jit-lock-fontify-now (treesit-node-start table)
                                 (treesit-node-end table))
-          (markdown-table-view--render-table table))))))
+          (markdown-table-view--render-table table revealed))))))
 
 ;;; Point and mouse
 
