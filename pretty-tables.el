@@ -139,7 +139,11 @@ character carries the buffer position it came from in the
                        #'invisible-p))
         (pos beg) parts)
     (while (< pos end)
+      ;; An overlay hides the `invisible' text properties under it from
+      ;; `next-single-char-property-change', and the `:invisible'
+      ;; function may read them.
       (let ((next (min (next-single-char-property-change pos 'invisible nil end)
+                       (next-single-property-change pos 'invisible nil end)
                        (next-single-char-property-change pos 'display nil end)))
             (display (get-char-property pos 'display)))
         (cond

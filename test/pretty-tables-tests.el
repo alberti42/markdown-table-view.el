@@ -234,6 +234,23 @@ End.
                     (pretty-tables--visible-string 1 7))
                    "abdef"))))
 
+(ert-deftest pretty-tables-test-visible-string-under-overlay ()
+  "The `:invisible' function sees each `invisible' text property.
+An overlay's `invisible' property hides them from
+`next-single-char-property-change'."
+  (with-temp-buffer
+    (insert "abcdef")
+    (overlay-put (make-overlay 1 7) 'invisible 'fold)
+    (put-text-property 3 5 'invisible 'hidden)
+    (setq-local pretty-tables--adaptor
+                (list :invisible (lambda (pos)
+                                   (eq (plist-get (text-properties-at pos)
+                                                  'invisible)
+                                       'hidden))))
+    (should (equal (substring-no-properties
+                    (pretty-tables--visible-string 1 7))
+                   "abef"))))
+
 ;;; Drawing tables
 
 (ert-deftest pretty-tables-test-draw-table ()
