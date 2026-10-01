@@ -21,15 +21,19 @@ rows are written on one line each:
 | Pixels of a monitor | [Pixels of a monitor](catalogue/catalogue.md#pixels-of-a-monitor) (p. 144) | — |
 ```
 
-With `markdown-ts-hide-markup` on and `fill-column` set to 100, the mode draws those rows as:
+With `markdown-ts-hide-markup` on and `fill-column` set to 72, the mode draws those rows as:
 
 ```text
-| Demonstration                  | Catalogue                  | Index card                         |
-|--------------------------------|----------------------------|------------------------------------|
-| Additive colour mixing | Additive colour mixing with three  | OP 14.11 Additive colour mixing    |
-|                        | projectors (p. 144); Additive      | (p. 192)                           |
-|                        | colour mixing (p. 147)             |                                    |
-| Pixels of a monitor    | Pixels of a monitor (p. 144)       | —                                  |
+| Demonstration        | Catalogue             | Index card            |
+|----------------------|-----------------------|-----------------------|
+| Additive colour      | Additive colour       | OP 14.11 Additive     |
+| mixing               | mixing with three     | colour mixing         |
+|                      | projectors (p. 144);  | (p. 192)              |
+|                      | Additive              |                       |
+|                      | colour mixing (p.     |                       |
+|                      | 147)                  |                       |
+| Pixels of a monitor  | Pixels of a monitor   |                       |
+|                      | (p. 144)              |                       |
 ```
 
 The link labels keep the faces `markdown-ts-mode` gives them, and clicking one follows the link.
