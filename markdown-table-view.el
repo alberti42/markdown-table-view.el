@@ -260,6 +260,10 @@ ALIGNMENTS give each column's width and alignment."
 
 (defun markdown-table-view--render-table (table)
   "Cover each row of TABLE with an overlay that draws it aligned."
+  ;; The old overlays go first: the cells are read with
+  ;; `get-char-property', which would return their `display' strings.
+  (markdown-table-view--delete-overlays (treesit-node-start table)
+                                        (treesit-node-end table))
   (let* ((rows (seq-filter
                 (lambda (n) (member (treesit-node-type n)
                                     '("pipe_table_header"
@@ -291,8 +295,6 @@ ALIGNMENTS give each column's width and alignment."
                                    (markdown-table-view--alignments delimiter))))
                        (mapcar (lambda (i) (or (nth i a) 'left))
                                (number-sequence 0 (1- ncols))))))
-    (markdown-table-view--delete-overlays (treesit-node-start table)
-                                          (treesit-node-end table))
     (seq-mapn
      (lambda (row cells)
        (let* ((beg (treesit-node-start row))
