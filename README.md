@@ -85,6 +85,8 @@ The screenshot shows [`examples/field-guide.md`](examples/field-guide.md) in a g
 |              |                 |                  | autumn 1122      |
 ```
 
+[`Screenshot-org.png`](Screenshot-org.png) shows `examples/field-guide.org` in a graphical frame, with the doom-opera-light theme and `fill-column` set to 72.
+
 ## Requirements
 
 - Emacs 31.1 or later.
