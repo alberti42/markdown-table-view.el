@@ -29,6 +29,14 @@
 ;; `markdown-ts-mode' that changes how pipe tables are displayed and
 ;; nothing else.  The buffer text is never modified.
 ;;
+;; `markdown-ts-mode' runs the `markdown-inline' grammar only on
+;; `inline' nodes, and a table cell is not one, so links, emphasis and
+;; code in a cell are not fontified and their markup is not hidden.
+;; While the mode is on, it runs the grammar on table cells too, and
+;; `markdown-ts-mode' fontifies them as it fontifies a paragraph.  The
+;; mode adds this rule only when `treesit-range-settings' does not
+;; already run the grammar on table cells.
+;;
 ;; Each table row is covered by an overlay whose `display' property is a
 ;; string drawing the row with aligned columns.  Column widths come from
 ;; the text a reader sees in each cell: characters that are invisible
@@ -62,6 +70,9 @@ When nil, use `fill-column'."
 (defcustom markdown-table-view-min-column-width 8
   "Width below which a column is not narrowed to fit the table width."
   :type 'natnum)
+
+(defvar-local markdown-table-view--range-settings nil
+  "The entries this mode added to `treesit-range-settings', or nil.")
 
 (defvar-local markdown-table-view--revealed nil
   "Row overlay currently shown as raw text, or nil.")
@@ -376,13 +387,72 @@ When that text is a link, follow it with the command RET runs there."
         (when (commandp command)
           (call-interactively command))))))
 
+;;; Parsing cells
+
+(defun markdown-table-view--cells-parsed-p ()
+  "Return non-nil when `treesit-range-settings' runs `markdown-inline' on cells.
+A compiled query cannot be read back, so each query that embeds
+`markdown-inline' is run on a small table in a temporary buffer, and
+the value is non-nil when one of them captures a `pipe_table_cell'."
+  (when-let* ((queries (seq-keep (lambda (setting)
+                                   (and (eq (nth 1 setting) 'markdown-inline)
+                                        (car setting)))
+                                 treesit-range-settings)))
+    (with-temp-buffer
+      (insert "| a |\n|---|\n| b |\n")
+      (let ((root (treesit-parser-root-node (treesit-parser-create 'markdown))))
+        (seq-some (lambda (query)
+                    (seq-some (lambda (capture)
+                                (equal (treesit-node-type (cdr capture))
+                                       "pipe_table_cell"))
+                              (treesit-query-capture root query)))
+                  queries)))))
+
+(defun markdown-table-view--parse-cells (on)
+  "Run the `markdown-inline' grammar on table cells if ON is non-nil.
+The rule is added only when `markdown-table-view--cells-parsed-p' is
+nil.  When ON is nil, remove the rule this mode added and delete the
+parsers made for the cells."
+  (when markdown-table-view--range-settings
+    (setq-local treesit-range-settings
+                (seq-difference treesit-range-settings
+                                markdown-table-view--range-settings #'eq))
+    (setq markdown-table-view--range-settings nil)
+    ;; treesit deletes a local parser it no longer needs only after the
+    ;; buffer is modified.
+    (dolist (ov (overlays-in (point-min) (point-max)))
+      (let ((parser (overlay-get ov 'treesit-parser)))
+        (when (and parser
+                   (overlay-get ov 'treesit-parser-local-p)
+                   (eq (treesit-parser-language parser) 'markdown-inline)
+                   (treesit-parent-until
+                    (treesit-node-at (overlay-start ov) 'markdown)
+                    "\\`pipe_table_cell\\'" t))
+          (treesit-parser-delete parser)
+          (delete-overlay ov)))))
+  (when (and on
+             (treesit-parser-list nil 'markdown)
+             (treesit-language-available-p 'markdown-inline)
+             (not (markdown-table-view--cells-parsed-p)))
+    (setq markdown-table-view--range-settings
+          (treesit-range-rules
+           :embed 'markdown-inline
+           :host 'markdown
+           :local t
+           '((pipe_table_cell) @markdown-inline)))
+    (setq-local treesit-range-settings
+                (append treesit-range-settings
+                        markdown-table-view--range-settings))))
+
 ;;; Mode
 
 ;;;###autoload
 (define-minor-mode markdown-table-view-mode
   "Display Markdown pipe tables with aligned, wrapped columns.
 The buffer text is not changed.  The row point is on is shown as its
-raw text, except after a scroll command moved point onto it."
+raw text, except after a scroll command moved point onto it.
+Table cells are parsed as inline Markdown, so their links, emphasis and
+code are fontified."
   :lighter nil
   (cond
    (markdown-table-view-mode
@@ -391,8 +461,10 @@ raw text, except after a scroll command moved point onto it."
     ;; font-lock, whose faces and invisibility it reads.
     (remove-hook 'jit-lock-functions #'markdown-table-view--fontify t)
     (add-hook 'jit-lock-functions #'markdown-table-view--fontify 90 t)
-    (add-hook 'post-command-hook #'markdown-table-view--reveal nil t))
+    (add-hook 'post-command-hook #'markdown-table-view--reveal nil t)
+    (markdown-table-view--parse-cells t))
    (t
+    (markdown-table-view--parse-cells nil)
     (jit-lock-unregister #'markdown-table-view--fontify)
     (remove-hook 'post-command-hook #'markdown-table-view--reveal t)
     (markdown-table-view--delete-overlays (point-min) (point-max))
