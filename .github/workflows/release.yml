@@ -6,7 +6,9 @@ name: Release
 # CHANGELOG.md, so move [Unreleased] into a dated version heading before
 # tagging; a tag with no such section is refused.
 #
-# The tag must equal the `Version:' header of markdown-table-view.el.
+# The repository ships three packages under one version, so the tag must
+# equal the `Version:' header of each of pretty-tables.el,
+# pretty-tables-for-markdown.el and pretty-tables-for-org.el.
 #
 # Runnable by hand: `workflow_dispatch' packs and attests exactly as a tag
 # would and stops before publishing anything, because the `release' job is
@@ -15,8 +17,8 @@ name: Release
 #
 # To verify a downloaded asset:
 #
-#     gh attestation verify markdown-table-view-0.1.0.tar.gz \
-#       --repo alberti42/markdown-table-view.el
+#     gh attestation verify pretty-tables-0.2.0.tar.gz \
+#       --repo alberti42/pretty-tables.el
 
 on:
   push:
@@ -53,15 +55,19 @@ jobs:
           fi
 
       # Only a tag claims to be a release, so only a tag has to match one.
-      - name: The tag must equal the Version header
+      - name: The tag must equal the Version headers
         if: github.event_name == 'push'
         run: |
-          HEADER=$(sed -n 's/^;; Version: //p' markdown-table-view.el)
           TAG="${GITHUB_REF_NAME#v}"
-          echo "header=$HEADER  tag=$TAG"
-          test "$TAG" = "$HEADER" || {
-            echo "::error::markdown-table-view.el says Version: $HEADER, the tag says $TAG"
-            exit 1; }
+          STATUS=0
+          for FILE in pretty-tables.el pretty-tables-for-markdown.el pretty-tables-for-org.el; do
+            HEADER=$(sed -n 's/^;; Version: //p' "$FILE")
+            echo "$FILE: header=$HEADER  tag=$TAG"
+            test "$TAG" = "$HEADER" || {
+              echo "::error::$FILE says Version: $HEADER, the tag says $TAG"
+              STATUS=1; }
+          done
+          exit $STATUS
 
       # The changelog is the only place release notes are written.
       - name: Take the release body out of the changelog
@@ -85,18 +91,20 @@ jobs:
       # checksum has changed before for archives already published.  This
       # archive is reproducible from the tag: `git archive' dates every entry
       # from the commit, and `gzip -n' leaves the timestamp and the file name
-      # out of the gzip header.  The single file is attached too, for
-      # `M-x package-install-file'.
+      # out of the gzip header.  The three package files are attached too,
+      # for `M-x package-install-file'; install pretty-tables.el first.
       - name: Pack
         env:
           SECTION: ${{ steps.what.outputs.section }}
           REF: ${{ github.event_name == 'push' && github.ref_name || 'HEAD' }}
         run: |
           mkdir assets
-          git archive --format=tar --prefix="markdown-table-view-$SECTION/" "$REF" \
-            | gzip -9n > "assets/markdown-table-view-$SECTION.tar.gz"
-          git show "$REF:markdown-table-view.el" > assets/markdown-table-view.el
-          tar -tzf "assets/markdown-table-view-$SECTION.tar.gz"
+          git archive --format=tar --prefix="pretty-tables-$SECTION/" "$REF" \
+            | gzip -9n > "assets/pretty-tables-$SECTION.tar.gz"
+          for FILE in pretty-tables.el pretty-tables-for-markdown.el pretty-tables-for-org.el; do
+            git show "$REF:$FILE" > "assets/$FILE"
+          done
+          tar -tzf "assets/pretty-tables-$SECTION.tar.gz"
           ls -l assets
 
       # SHA256SUMS, published beside the assets, says a download was not
