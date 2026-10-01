@@ -14,7 +14,10 @@
 # the job runs once per recipe: what is checked is one package and the
 # single file that recipe ships, not the checkout as a whole.  melpazoid
 # installs an adaptor's dependency `pretty-tables' from MELPA, so until
-# `pretty-tables' is on MELPA the adaptors' jobs fail to byte-compile.
+# `pretty-tables' is on MELPA the adaptors' jobs fail to byte-compile, and
+# package-lint reports "Package pretty-tables is not installable".  Their
+# matrix entries set `needs-melpa', which lets them fail without failing
+# the workflow; remove it once `pretty-tables' is on MELPA.
 #
 # It fails the build only on errors.
 
@@ -41,9 +44,12 @@ jobs:
             recipe: '(pretty-tables :fetcher github :repo "alberti42/pretty-tables.el" :files ("pretty-tables.el"))'
           - package: pretty-tables-for-markdown
             recipe: '(pretty-tables-for-markdown :fetcher github :repo "alberti42/pretty-tables.el" :files ("pretty-tables-for-markdown.el"))'
+            needs-melpa: true
           - package: pretty-tables-for-org
             recipe: '(pretty-tables-for-org :fetcher github :repo "alberti42/pretty-tables.el" :files ("pretty-tables-for-org.el"))'
+            needs-melpa: true
     name: MELPA checks (${{ matrix.package }})
+    continue-on-error: ${{ matrix.needs-melpa == true }}
     # A passing run takes about 3 minutes.  Without a limit, a stalled
     # apt-get keeps the job running for GitHub's default of 6 hours.
     timeout-minutes: 15
