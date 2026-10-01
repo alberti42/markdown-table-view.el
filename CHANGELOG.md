@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The release workflow publishes the section of a version as the text of its
 GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
-`## [X.Y.Z] - YYYY-MM-DD` heading and set `Version:` in
-`markdown-table-view.el` to `X.Y.Z`.
+`## [X.Y.Z] - YYYY-MM-DD` heading and set `Version:` in every package file
+to `X.Y.Z`.
 
 ## [Unreleased]
 
@@ -23,6 +23,27 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 ### Changed
 
+- `markdown-table-view` is now `pretty-tables-for-markdown`, an adaptor that
+  requires `pretty-tables`. The names that changed, for users of 0.1.0:
+
+  | 0.1.0 | Now |
+  |---|---|
+  | `markdown-table-view-mode` | `pretty-tables-for-markdown-mode` |
+  | `markdown-table-view-width` | `pretty-tables-width` |
+  | `markdown-table-view-min-column-width` | `pretty-tables-min-column-width` |
+  | `markdown-table-view-stripe-rows` | `pretty-tables-stripe-rows` |
+  | `markdown-table-view-row-lines` | `pretty-tables-row-lines` |
+  | `markdown-table-view-row` | `pretty-tables-row` |
+  | `markdown-table-view-stripe` | `pretty-tables-stripe` |
+  | `markdown-table-view-row-line` | `pretty-tables-row-line` |
+  | `markdown-table-view-row-map` | `pretty-tables-row-map` |
+  | `markdown-table-view-mouse-follow` | `pretty-tables-mouse-follow` |
+
+  A configuration that requires `markdown-table-view` or turns on
+  `markdown-table-view-mode` has to use the new names.
+- `pretty-tables-row` and `pretty-tables-stripe` inherit no face. The table
+  face of the markup, `markdown-ts-table` for Markdown, is added to the row
+  after them.
 - Setting `fill-column` or one of the package's options draws the tables
   again. Before, a table changed only when it was drawn again for another
   reason, for example after `M-x font-lock-update`.
@@ -31,16 +52,15 @@ GitHub release, so before tagging `vX.Y.Z`, move `[Unreleased]` into a
 
 - Rows drawn with `markdown-table-view-stripe` were bold in themes that make
   `lazy-highlight` bold, the `|` separators included, because the face
-  brought every attribute of `lazy-highlight`. The two faces now inherit
-  `markdown-ts-table`, and a data row is drawn with its face and only the
-  background of `hl-line` or `lazy-highlight`, read when the table is drawn.
-  A background set on the face itself takes their place. The tables are
-  drawn again when a theme is enabled or disabled.
+  brought every attribute of `lazy-highlight`. A data row is now drawn with
+  its face and only the background of `hl-line` or `lazy-highlight`, read
+  when the table is drawn. A background set on the face itself takes their
+  place. The tables are drawn again when a theme is enabled or disabled.
 - The background of a data row that wraps over several screen lines ended a
   few pixels further right on every screen line but the last. The newlines
   between the screen lines no longer get the row's background.
 - `markdown-table-view-row` had no background until something loaded
-  `hl-line`, whose face it inherits. The package now loads `hl-line`.
+  `hl-line`, whose background it takes. The package now loads `hl-line`.
 
 ## [0.1.0] - 2026-10-01
 

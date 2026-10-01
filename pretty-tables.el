@@ -480,7 +480,8 @@ An adaptor calls this from its minor mode.  ADAPTOR is a plist:
 `:separator'  A function called with the column WIDTHS and
               ALIGNMENTS that returns a new string drawing a
               separator row.  Required.
-`:line-break' A regexp that splits a cell into lines, or nil.
+`:line-break' A regexp, matched ignoring case, that splits a cell
+              into lines, or nil.
 `:face'       A face appended to every drawn row, after the cell's
               own faces and the row faces, or nil.
 `:invisible'  A function called with a buffer position that returns
