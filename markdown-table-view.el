@@ -38,9 +38,10 @@
 ;; several screen lines.  `<br>' in a cell starts a new line.
 ;;
 ;; The row point is on is shown as its raw text, so it can be edited and
-;; its links followed with RET.  Clicking a character of a drawn row moves
-;; point to that character in the buffer, and follows the link there if
-;; there is one.
+;; its links followed with RET.  After a scroll command, a row point
+;; moved onto stays drawn until the next command.  Clicking a character
+;; of a drawn row moves point to that character in the buffer, and
+;; follows the link there if there is one.
 
 ;;; Code:
 
@@ -341,9 +342,14 @@ first."
             (overlays-in (pos-bol) (pos-eol))))
 
 (defun markdown-table-view--reveal ()
-  "Show the row point is on as raw text, and draw the one point left."
+  "Show the row point is on as raw text, and draw the one point left.
+After a command with a non-nil `scroll-command' property, a row point
+moved onto stays drawn."
   (let ((ov (markdown-table-view--row-overlay-at-point))
         (old markdown-table-view--revealed))
+    (when (and (symbolp this-command) (get this-command 'scroll-command)
+               (not (eq ov old)))
+      (setq ov nil))
     (unless (eq ov old)
       (when (and old (overlay-buffer old))
         (overlay-put old 'display (overlay-get old 'markdown-table-view-string)))
@@ -375,7 +381,7 @@ When that text is a link, follow it with the command RET runs there."
 (define-minor-mode markdown-table-view-mode
   "Display Markdown pipe tables with aligned, wrapped columns.
 The buffer text is not changed.  The row point is on is shown as its
-raw text."
+raw text, except after a scroll command moved point onto it."
   :lighter nil
   (cond
    (markdown-table-view-mode
